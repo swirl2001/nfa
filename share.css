@@ -1,35 +1,39 @@
-/* NFA Wishlist share page. Phone-first; neutral black/white like the extension. */
+/* NFA Wishlist share page. Phone-first; neutral black/white; cards match the extension popup. */
 :root {
-  --ink: #1d1b18;
-  --muted: #6b665e;
-  --line: #e7e2d9;
-  --bg: #fbf8f2;
+  /* Chrome's default palette, matching the extension popup */
+  --ink: #202124;
+  --muted: #5f6368;
+  --line: #dadce0;
+  --bg: #f1f3f4;
   --card: #ffffff;
-  --placeholder: #b1aa9e;
-  --brand-soft: #a29b90;
-  --btn: #1d1b18;
+  --placeholder: #9aa0a6;
+  --brand-soft: #9aa0a6;
+  --btn: #202124;
   --on-btn: #ffffff;
-  --hover: rgba(0, 0, 0, .05);
+  --hover: rgba(32, 33, 36, .06);
   --badge-bg: rgba(255, 255, 255, .94);
-  --shadow: 0 1px 3px rgba(29, 27, 24, .08), 0 4px 12px rgba(29, 27, 24, .06);
-  --toast-bg: #1d1b18;
+  --shadow: 0 1px 2px rgba(60, 64, 67, .2), 0 2px 8px rgba(60, 64, 67, .12);
+  --head-shadow: 0 2px 8px rgba(60, 64, 67, .12);
+  --toast-bg: #202124;
   color-scheme: light dark;
 }
+
 @media (prefers-color-scheme: dark) {
   :root {
-    --ink: #f1ede6;
-    --muted: #c9c4bb;
-    --line: #3a3631;
-    --bg: #1b1916;
-    --card: #26231f;
-    --placeholder: #a9a39a;
-    --brand-soft: #8e887f;
-    --btn: #f1ede6;
-    --on-btn: #1b1916;
-    --hover: rgba(255, 255, 255, .07);
-    --badge-bg: rgba(38, 35, 31, .94);
-    --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 4px 14px rgba(0, 0, 0, .3);
-    --toast-bg: #3a3631;
+    --ink: #e8eaed;
+    --muted: #bdc1c6;
+    --line: #3c4043;
+    --bg: #202124;
+    --card: #35363a;
+    --placeholder: #9aa0a6;
+    --brand-soft: #9aa0a6;
+    --btn: #e8eaed;
+    --on-btn: #202124;
+    --hover: rgba(232, 234, 237, .08);
+    --badge-bg: rgba(53, 54, 58, .94);
+    --shadow: 0 1px 3px rgba(0, 0, 0, .5), 0 4px 14px rgba(0, 0, 0, .35);
+    --head-shadow: 0 2px 10px rgba(0, 0, 0, .5);
+    --toast-bg: #3c4043;
   }
 }
 
@@ -42,32 +46,53 @@ body {
   color: var(--ink); background: var(--bg);
 }
 a { color: inherit; }
-button { font: inherit; cursor: pointer; }
+button { font: inherit; cursor: pointer; color: inherit; }
 
-/* Header */
-.top { padding: 16px; max-width: 1100px; width: 100%; margin: 0 auto; }
+/* Header: sticks to the top; hairline + shadow once the cards scroll under it */
+.head {
+  position: sticky; top: 0; z-index: 10; background: var(--bg);
+  border-bottom: 1px solid transparent; transition: box-shadow .15s, border-color .15s;
+}
+.head.scrolled { border-bottom-color: var(--line); box-shadow: var(--head-shadow); }
+.top, .wrap-x, .wrap { width: 100%; max-width: 1100px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
+.top { padding-top: 14px; padding-bottom: 6px; }
 .brand { display: flex; align-items: center; gap: 8px; }
 .brand-mark { display: block; width: 28px; height: 28px; }
-.logo { font-weight: 800; letter-spacing: .5px; background: var(--ink); color: var(--bg); padding: 2px 8px; font-size: 14px; }
-.brand-name { font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--brand-soft); }
+/* Logo: NFA = white on black square, WISHLIST = black on white square (same in both modes), flush together */
+.logo { font-weight: 800; letter-spacing: .5px; background: #111; color: #fff; padding: 2px 8px; font-size: 14px; line-height: 1.4; border: 1px solid #111; }
+.brand-name { font-weight: 700; font-size: 14px; line-height: 1.4; letter-spacing: .08em; text-transform: uppercase; background: #fff; color: #111; padding: 3px 9px; margin-left: -8px; }
 
-.wrap { flex: 1; width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 16px 32px; }
-.intro { margin: 8px 0 18px; }
-.title { margin: 0; font-size: 28px; line-height: 1.15; overflow-wrap: anywhere; }
-.explainer { margin: 6px 0 0; color: var(--muted); font-size: 14.5px; max-width: 60ch; }
-.state { color: var(--muted); padding: 24px 0; }
+.intro { padding-top: 8px; padding-bottom: 12px; }
+.title-row { display: flex; align-items: center; gap: 2px; }
+.title { flex: 1; min-width: 0; margin: 0; font-size: 26px; line-height: 1.15; overflow-wrap: anywhere; }
+.explainer { margin: 4px 0 0; color: var(--muted); font-size: 14.5px; max-width: 62ch; }
+
+/* Header icon buttons: no circle until hover */
+.icon {
+  width: 36px; height: 36px; display: grid; place-items: center; padding: 0; flex: none;
+  border: 0; border-radius: 50%; background: none; color: var(--ink);
+}
+.icon:hover, .icon[aria-expanded="true"] { background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+.icon:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+.rename { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-width: 420px; font-size: 14px; font-weight: 600; }
+
+.wrap { flex: 1; padding-top: 12px; padding-bottom: 32px; }
+.state { color: var(--muted); padding: 24px 0; margin: 0; }
 
 /* Cards: 2 columns on phones, more on wider screens */
-.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; align-items: start; }
 @media (min-width: 640px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 20px; } }
 @media (min-width: 960px) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
 .card { min-width: 0; display: flex; flex-direction: column; }
+.card.dragging { opacity: .35; }
+.owner .card { cursor: grab; }
 .media {
   position: relative; aspect-ratio: 4 / 5; border-radius: 14px; overflow: hidden;
-  background: var(--card); box-shadow: var(--shadow); display: block;
+  background: var(--card); box-shadow: var(--shadow);
 }
-a.media { cursor: pointer; }
+.media.linked { cursor: pointer; }
 .img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .noimg {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -79,25 +104,48 @@ a.media { cursor: pointer; }
 .alt-badge { background: var(--ink); color: var(--bg); font-weight: 700; font-size: 11px; padding: 2px 8px; border-radius: 999px; }
 .badge {
   position: absolute; left: 8px; top: 8px; background: var(--badge-bg); color: var(--ink);
-  font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+  border: 1px solid var(--line); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
 }
-.badge-claimed { top: auto; bottom: 8px; }
+.badge-claimed { top: 8px; }
 
-.txt { padding: 8px 2px 0; }
-.t-name { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.t-desc {
-  margin: 2px 0 0; font-size: 13.5px; color: var(--muted); line-height: 1.35;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+/* Hover overlay (always on for touch screens, which can't hover) */
+.overlay {
+  position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .15s;
+  background: linear-gradient(to bottom, transparent 55%, rgba(0, 0, 0, .55));
 }
-.t-desc:empty { display: none; }
-.t-meta { margin: 3px 0 0; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.t-price { font-weight: 700; font-size: 15px; }
-.t-store { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.media:hover .overlay, .media:focus-within .overlay, .card.menu-open .overlay { opacity: 1; pointer-events: auto; }
+@media (hover: none) {
+  .overlay { opacity: 1; pointer-events: auto; background: none; }
+  .ov-store { display: none; }
+}
+.card.dragging .overlay { opacity: 0; }
+.ov-btn {
+  width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; padding: 0;
+  background: rgba(40, 36, 32, .72); color: #fff; cursor: pointer;
+}
+.ov-btn:hover, .ov-btn[aria-expanded="true"] { background: rgba(40, 36, 32, .9); }
+.ov-btn:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+.del { position: absolute; top: 8px; right: 8px; }
+.ov-bottom { position: absolute; left: 10px; right: 8px; bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.ov-bottom .more { margin-left: auto; }
+.ov-store { color: #fff; font-weight: 700; font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, .4); }
+.card.claimed .ov-store { display: none; }
+
+/* Text lines; click to edit on the owner's edit link */
+.txt { padding: 8px 2px 0; display: flex; flex-direction: column; gap: 1px; }
+.t-name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-desc { font-size: 13.5px; color: var(--muted); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.t-price { font-size: 15px; font-weight: 700; }
+.friend .t-desc:empty, .friend .t-price:empty { display: none; }
+.owner .txt > div { border-radius: 4px; padding: 0 3px; margin: 0 -3px; cursor: text; outline: none; }
+.owner .txt > div:hover { background: var(--hover); }
+.owner .txt > div:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
+.owner .txt > div:empty::before { content: attr(data-placeholder); color: var(--placeholder); font-weight: 400; }
+.txt > .editing { background: var(--card); box-shadow: 0 0 0 2px var(--ink); white-space: normal !important; display: block !important; }
 
 /* Buttons: pills */
-.actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .pill {
-  display: inline-flex; align-items: center; justify-content: center; min-height: 36px;
+  display: inline-flex; align-items: center; justify-content: center; min-height: 38px;
   padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; text-decoration: none;
   border: 1px solid var(--line); background: var(--card); color: var(--ink);
 }
@@ -105,20 +153,35 @@ a.media { cursor: pointer; }
 .pill-ghost:hover { background: var(--hover); }
 .pill-solid:hover { filter: brightness(1.15); }
 .pill:disabled { opacity: .6; cursor: default; }
-.pill:focus-visible, .claim-name:focus { outline: none; box-shadow: 0 0 0 2px var(--ink); }
+.pill:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--ink); }
+.buy { width: 100%; margin-top: 10px; }
+.row-end { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
 
-/* "I bought this" form */
+/* "I bought this" form + rename input */
 .claim { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .claim-label { font-size: 13px; color: var(--muted); }
-.claim-name {
+.claim-name, #renameInput {
   font: inherit; font-size: 16px; /* 16px stops iOS zooming in */
   padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); width: 100%;
 }
-.claim-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.claim-name:focus, #renameInput:focus { outline: none; box-shadow: 0 0 0 2px var(--ink); }
 
 /* Claimed: greyed out for friends */
 .card.claimed .media img, .card.claimed .noimg { filter: grayscale(1); opacity: .45; }
 .card.claimed .txt { opacity: .55; }
+
+/* Menus */
+.menu {
+  position: fixed; z-index: 40; min-width: 200px; padding: 6px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 8px 28px rgba(0, 0, 0, .18);
+}
+.menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; border-radius: 999px;
+  padding: 9px 12px; color: var(--ink); font-size: 14.5px; text-align: left;
+}
+.menu-item svg { color: var(--muted); flex: none; }
+.menu-item:hover, .menu-item:focus-visible { background: var(--hover); outline: none; }
+.menu-hint { color: var(--placeholder); margin-left: -4px; }
 
 /* Footer */
 .foot { border-top: 1px solid var(--line); padding: 18px 16px 28px; text-align: center; color: var(--muted); font-size: 13px; }
@@ -126,15 +189,12 @@ a.media { cursor: pointer; }
 
 /* Toast */
 .toast {
-  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 30;
-  display: flex; align-items: center; gap: 12px; max-width: calc(100% - 32px);
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 50;
+  display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px);
   padding: 10px 10px 10px 18px; border-radius: 16px; background: var(--toast-bg); color: #fff;
   font-size: 14.5px; box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
 }
-.toast-close { width: 30px; height: 30px; display: grid; place-items: center; padding: 0; background: none; border: 0; border-radius: 50%; color: inherit; }
-.toast-close:hover { background: rgba(255, 255, 255, .12); }
-
-/* Phone columns are narrow: stack the buttons full-width so every card lines up. */
-.actions .pill { flex: 1 1 100%; }
-.badge { border: 1px solid var(--line); }
-.t-price:empty { display: none; }
+.toast-msg { min-width: 0; }
+.toast-undo { background: none; border: 0; padding: 4px 6px; border-radius: 999px; color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; flex: none; }
+.toast-close { width: 30px; height: 30px; display: grid; place-items: center; padding: 0; background: none; border: 0; border-radius: 50%; color: inherit; flex: none; }
+.toast-undo:hover, .toast-close:hover { background: rgba(255, 255, 255, .12); }

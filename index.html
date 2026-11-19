@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>NFA Wishlist</title>
   <meta name="description" content="A wishlist shared with NFA Wishlist." />
-  <!-- Private lists: keep out of search engines; don't leak the list link to stores via Referer. -->
+  <!-- Private lists: keep out of search engines; never leak list/edit links to stores via Referer. -->
   <meta name="robots" content="noindex, nofollow" />
   <meta name="referrer" content="no-referrer" />
   <meta http-equiv="Content-Security-Policy"
@@ -14,22 +14,39 @@
   <link rel="stylesheet" href="share.css" />
 </head>
 <body>
-  <header class="top">
-    <div class="brand">
-      <img class="brand-mark" src="raven.svg" width="28" height="28" alt="" />
-      <span class="logo">NFA</span>
-      <span class="brand-name">Wishlist</span>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <section id="intro" class="intro" hidden>
-      <h1 id="title" class="title"></h1>
+  <div id="head" class="head">
+    <header class="top">
+      <div class="brand">
+        <img class="brand-mark" src="raven.svg" width="28" height="28" alt="" />
+        <span class="logo">NFA</span>
+        <span class="brand-name">Wishlist</span>
+      </div>
+    </header>
+    <section id="intro" class="intro wrap-x" hidden>
+      <div class="title-row">
+        <h1 id="title" class="title"></h1>
+        <!-- Owner (edit link) only -->
+        <button id="shareBtn" class="icon" type="button" aria-label="Copy friends &amp; family link" title="Copy friends &amp; family link" hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+        </button>
+        <button id="listMenuBtn" class="icon" type="button" aria-label="List options" title="List options" aria-haspopup="menu" hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        </button>
+      </div>
+      <form id="renameForm" class="rename" hidden>
+        <label for="renameInput">Rename list</label>
+        <input id="renameInput" type="text" maxlength="100" />
+        <div class="row-end">
+          <button id="renameCancel" class="pill pill-ghost" type="button">Cancel</button>
+          <button class="pill pill-solid" type="submit">Save</button>
+        </div>
+      </form>
       <p id="explainer" class="explainer"></p>
     </section>
+  </div>
 
+  <main class="wrap">
     <p id="state" class="state">Loading the list…</p>
-
     <section id="items" class="grid" aria-live="polite"></section>
   </main>
 
@@ -37,9 +54,20 @@
     <p>Made with <b>NFA Wishlist</b>, a free extension for saving gifts from independent shops. No Amazon links, ever.</p>
   </footer>
 
-  <!-- Toast -->
+  <!-- One floating menu, filled in for whichever ⋯ was clicked -->
+  <div id="menu" class="menu" role="menu" hidden></div>
+  <template id="menuIcons">
+    <span data-icon="open"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></span>
+    <span data-icon="copy"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1zM5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg></span>
+    <span data-icon="top"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14M12 20V9M7 13l5-5 5 5"/></svg></span>
+    <span data-icon="edit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg></span>
+    <span data-icon="download"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></span>
+  </template>
+
+  <!-- Toast (with Undo after deletes) -->
   <div id="toast" class="toast" role="status" aria-live="polite" hidden>
     <span class="toast-msg"></span>
+    <button class="toast-undo" type="button" hidden>Undo</button>
     <button class="toast-close" type="button" aria-label="Dismiss">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
@@ -48,32 +76,41 @@
   <template id="itemTpl">
     <article class="card">
       <div class="media">
-        <img class="img" alt="" loading="lazy" referrerpolicy="no-referrer" />
+        <img class="img" alt="" loading="lazy" referrerpolicy="no-referrer" draggable="false" />
         <div class="noimg" hidden>
           <span class="noimg-store"></span>
           <div class="alt" hidden>
             <span class="alt-badge">No Amazon links</span>
             <span>Find it at
-              <a class="alt-etsy" target="_blank" rel="noopener noreferrer">Etsy</a> ·
-              <a class="alt-web" target="_blank" rel="noopener noreferrer">other shops</a></span>
+              <a class="alt-etsy" target="_blank" rel="noopener noreferrer" draggable="false">Etsy</a> ·
+              <a class="alt-web" target="_blank" rel="noopener noreferrer" draggable="false">other shops</a></span>
           </div>
         </div>
         <span class="badge badge-out" hidden>Out of stock</span>
         <span class="badge badge-claimed" hidden>Someone's got this</span>
+        <div class="overlay">
+          <button class="ov-btn del" type="button" aria-label="Remove from list" title="Remove" hidden>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+          </button>
+          <div class="ov-bottom">
+            <span class="ov-store"></span>
+            <button class="ov-btn more" type="button" aria-label="More options" title="More" aria-haspopup="menu">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
       <div class="txt">
-        <h2 class="t-name"></h2>
-        <p class="t-desc"></p>
-        <p class="t-meta"><span class="t-price"></span><span class="t-store"></span></p>
+        <div class="t-name" data-field="name"></div>
+        <div class="t-desc" data-field="description" data-placeholder="Add a description"></div>
+        <div class="t-price" data-field="price" data-placeholder="Add a price"></div>
       </div>
-      <div class="actions">
-        <a class="pill pill-ghost shop" target="_blank" rel="noopener noreferrer">View in shop</a>
-        <button class="pill pill-solid buy" type="button">I bought this</button>
-      </div>
+      <!-- Friends only -->
+      <button class="pill pill-solid buy" type="button" hidden>I bought this</button>
       <form class="claim" hidden>
         <label class="claim-label">Your name. The list owner never sees who bought what.</label>
         <input class="claim-name" type="text" maxlength="60" autocomplete="name" placeholder="e.g. Aunt Jo" required />
-        <div class="claim-actions">
+        <div class="row-end">
           <button class="pill pill-ghost claim-cancel" type="button">Cancel</button>
           <button class="pill pill-solid" type="submit">Mark as bought</button>
         </div>
