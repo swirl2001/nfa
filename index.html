@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NFA Wishlist</title>
+  <meta name="description" content="A wishlist shared with NFA Wishlist." />
+  <!-- Private lists: keep out of search engines; don't leak the list link to stores via Referer. -->
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src https: data: 'self'; connect-src https://tpwsbimymlyjcotkvrqd.supabase.co; base-uri 'none'; form-action 'none'" />
+  <link rel="icon" href="raven.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="share.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <img class="brand-mark" src="raven.svg" width="28" height="28" alt="" />
+      <span class="logo">NFA</span>
+      <span class="brand-name">Wishlist</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="intro" class="intro" hidden>
+      <h1 id="title" class="title"></h1>
+      <p id="explainer" class="explainer"></p>
+    </section>
+
+    <p id="state" class="state">Loading the list…</p>
+
+    <section id="items" class="grid" aria-live="polite"></section>
+  </main>
+
+  <footer class="foot">
+    <p>Made with <b>NFA Wishlist</b>, a free extension for saving gifts from independent shops. No Amazon links, ever.</p>
+  </footer>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden>
+    <span class="toast-msg"></span>
+    <button class="toast-close" type="button" aria-label="Dismiss">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+
+  <template id="itemTpl">
+    <article class="card">
+      <div class="media">
+        <img class="img" alt="" loading="lazy" referrerpolicy="no-referrer" />
+        <div class="noimg" hidden>
+          <span class="noimg-store"></span>
+          <div class="alt" hidden>
+            <span class="alt-badge">No Amazon links</span>
+            <span>Find it at
+              <a class="alt-etsy" target="_blank" rel="noopener noreferrer">Etsy</a> ·
+              <a class="alt-web" target="_blank" rel="noopener noreferrer">other shops</a></span>
+          </div>
+        </div>
+        <span class="badge badge-out" hidden>Out of stock</span>
+        <span class="badge badge-claimed" hidden>Someone's got this</span>
+      </div>
+      <div class="txt">
+        <h2 class="t-name"></h2>
+        <p class="t-desc"></p>
+        <p class="t-meta"><span class="t-price"></span><span class="t-store"></span></p>
+      </div>
+      <div class="actions">
+        <a class="pill pill-ghost shop" target="_blank" rel="noopener noreferrer">View in shop</a>
+        <button class="pill pill-solid buy" type="button">I bought this</button>
+      </div>
+      <form class="claim" hidden>
+        <label class="claim-label">Your name. The list owner never sees who bought what.</label>
+        <input class="claim-name" type="text" maxlength="60" autocomplete="name" placeholder="e.g. Aunt Jo" required />
+        <div class="claim-actions">
+          <button class="pill pill-ghost claim-cancel" type="button">Cancel</button>
+          <button class="pill pill-solid" type="submit">Mark as bought</button>
+        </div>
+      </form>
+    </article>
+  </template>
+
+  <script src="config.js"></script>
+  <script src="amazon.js"></script>
+  <script src="share.js"></script>
+</body>
+</html>
