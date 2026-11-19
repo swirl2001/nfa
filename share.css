@@ -137,3 +137,4 @@ a.media { cursor: pointer; }
 /* Phone columns are narrow: stack the buttons full-width so every card lines up. */
 .actions .pill { flex: 1 1 100%; }
 .badge { border: 1px solid var(--line); }
+.t-price:empty { display: none; }
