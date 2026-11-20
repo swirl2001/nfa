@@ -176,17 +176,24 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .pill-small { min-height: 30px; padding: 4px 12px; font-size: 13px; }
 .buy, .unbuy { align-self: flex-start; margin-top: 8px; }
 .buy:hover, .unbuy:hover { background: var(--hover); }
-/* "✓ I gifted this" turns into "Undo" on hover; phones (no hover) show both */
-/* Both labels share one grid cell, so the button keeps the same width and doesn't flicker. */
-.unbuy { display: inline-grid; }
-.unbuy-on, .unbuy-hover { grid-area: 1 / 1; text-align: center; }
-.unbuy-hover { visibility: hidden; }
-.unbuy:not(.fresh):hover .unbuy-on, .unbuy:focus-visible .unbuy-on { visibility: hidden; }
-.unbuy:not(.fresh):hover .unbuy-hover, .unbuy:focus-visible .unbuy-hover { visibility: visible; }
+/* "✓ I gifted/own this": a "Click to undo" tooltip on hover or keyboard focus (the button's
+   aria-label says it too). Phones can't hover, so they show a small underlined "Undo" instead. */
+.unbuy { position: relative; gap: 6px; }
+.unbuy-touch { display: none; text-decoration: underline; }
+.tip {
+  position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translate(-50%, 2px);
+  background: var(--ink); color: var(--bg); font-size: 12px; font-weight: 600; line-height: 1.3;
+  padding: 4px 9px; border-radius: 6px; white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity .12s, transform .12s; z-index: 5;
+}
+.tip::after { /* little arrow */
+  content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+  border: 5px solid transparent; border-top-color: var(--ink);
+}
+.unbuy:hover .tip, .unbuy:focus-visible .tip { opacity: 1; transform: translate(-50%, 0); transition-delay: .25s; }
 @media (hover: none) {
-  .unbuy { display: inline-flex; gap: 6px; }
-  .unbuy .unbuy-on, .unbuy .unbuy-hover { visibility: visible; }
-  .unbuy .unbuy-hover { text-decoration: underline; }
+  .unbuy-touch { display: inline; }
+  .tip { display: none; }
 }
 .section-h { font-size: 18px; font-weight: 700; margin: 40px 0 14px; padding-top: 18px; border-top: 1px solid var(--line); }
 .row-end { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }

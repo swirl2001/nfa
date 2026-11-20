@@ -259,19 +259,6 @@ function card(tpl, it, owner) {
   return node;
 }
 
-// Right after a click the pointer is still on the button: keep "✓ I gifted/own this" showing (not
-// "Undo") until the pointer is seen off the button. (mouseleave isn't reliable for a button that
-// appeared under a pointer that hasn't moved, so watch pointer moves on the page instead.)
-function holdLabel(btn) {
-  btn.classList.add("fresh");
-  const off = (e) => {
-    if (btn.contains(e.target)) return;
-    btn.classList.remove("fresh");
-    document.removeEventListener("pointermove", off, true);
-  };
-  document.addEventListener("pointermove", off, true);
-}
-
 // ---------- owner: "Mark as purchased" → "✓ I own this" (their own flag, separate from friends' marks) ----------
 
 function wireOwned(node, it) {
@@ -291,7 +278,6 @@ function wireOwned(node, it) {
       it.owned = value;
       show();
       if (value) {
-        holdLabel(unbuy);
         toast("Marked as yours. Friends will see it's taken.", () => setOwned(false));
       } else {
         toast("No longer marked as yours.");
@@ -538,7 +524,6 @@ async function markPurchased(it) {
     if (token) {
       setMine(it.id, token);
       showClaimed(c.node, it, true);
-      holdLabel($(".unbuy", c.node));
       toast("Marked as purchased.", () => unmarkPurchased(it));
     } else {
       showClaimed(c.node, it, false);
