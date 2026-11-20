@@ -231,4 +231,4 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .toast-undo:hover, .toast-close:hover { background: rgba(255, 255, 255, .12); }
 
 /* Tagline next to the logo */
-.tagline { margin-left: 4px; font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.tagline { margin-left: 4px; font-size: 10px; letter-spacing: .02em; font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
