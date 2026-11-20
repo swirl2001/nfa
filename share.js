@@ -483,7 +483,7 @@ async function markPurchased(it) {
     if (token) {
       setMine(it.id, token);
       showClaimed(c.node, it, true);
-      // The pointer is still on the button: keep "✓ I got this" until it moves away, then hover = Undo.
+      // The pointer is still on the button: keep "✓ I gifted this" until it moves away, then hover = Undo.
       const ub = $(".unbuy", c.node);
       ub.classList.add("fresh");
       ub.addEventListener("mouseleave", () => ub.classList.remove("fresh"), { once: true });

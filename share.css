@@ -163,7 +163,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .pill-small { min-height: 30px; padding: 4px 12px; font-size: 13px; }
 .buy, .unbuy { align-self: flex-start; margin-top: 8px; }
 .buy:hover, .unbuy:hover { background: var(--hover); }
-/* "✓ I got this" turns into "Undo" on hover; phones (no hover) show both */
+/* "✓ I gifted this" turns into "Undo" on hover; phones (no hover) show both */
 /* Both labels share one grid cell, so the button keeps the same width and doesn't flicker. */
 .unbuy { display: inline-grid; }
 .unbuy-on, .unbuy-hover { grid-area: 1 / 1; text-align: center; }
