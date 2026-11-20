@@ -131,9 +131,13 @@ function setState(msg) { const s = $("#state"); s.textContent = msg || ""; s.hid
 
 async function load() {
   if (!/^[A-Za-z0-9_-]{6,64}$/.test(slug)) { setState("This link is missing its list code. Ask for the link again."); return; }
-  let data;
+  let data, ownsHere = false;
   try {
-    data = isEdit ? await ownerRpc("owner_list", {}) : await rpc("get_shared_list", { p_slug: slug });
+    // Friends link: also check (in parallel) whether this browser belongs to the list's owner.
+    [data, ownsHere] = await Promise.all([
+      isEdit ? ownerRpc("owner_list", {}) : rpc("get_shared_list", { p_slug: slug }),
+      isEdit ? false : isMyList(slug),
+    ]);
   } catch (e) { setState("Couldn't load this list. Check your connection and refresh."); return; }
   if (!data) {
     setState(isEdit
@@ -141,7 +145,8 @@ async function load() {
       : "This list doesn't exist anymore, or the link is wrong.");
     return;
   }
-  const owner = isEdit || viewOnlyOwner || data.is_owner === true;
+  if (isEdit) rememberMyList(slug); // this browser now knows the list is yours
+  const owner = isEdit || viewOnlyOwner || ownsHere || data.is_owner === true;
   document.body.classList.add(isEdit ? "owner" : owner ? "owner-view" : "friend");
   listTitle = data.title;
   renderHeader(owner);
@@ -156,7 +161,7 @@ function renderHeader(owner) {
   $("#explainer").textContent = isEdit
     ? "This is your private edit link. Don't share it. Use the share button to send friends their own link. What's been bought stays hidden from you."
     : owner
-      ? "This is your list. What's been bought stays hidden from you, so it's still a surprise."
+      ? "Don't spoil the surprise! This is your list, so what friends buy stays hidden from you."
       : "Tap “Mark as purchased” when you get something, so nobody doubles up. The list owner never sees what's been bought.";
   $("#shareBtn").hidden = !isEdit;
   $("#listMenuBtn").hidden = !isEdit;
@@ -542,5 +547,31 @@ function maybeAsk() {
 }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") maybeAsk(); });
 window.addEventListener("focus", maybeAsk);
+
+// ---------- "is this my own list?" (surprise protection for the friends link) ----------
+// The website has no sign-in, so it can't ask the server. Two courtesy checks instead:
+//   1. this browser has opened the list's private edit link before (localStorage), or
+//   2. the NFA extension in this Chrome says the list is yours (externally_connectable message).
+// If either says yes, the friends link shows the owner view: no purchases, no buttons.
+const OWNED_KEY = "nfa-owned";          // [slug, …] lists whose edit link was opened in this browser
+function rememberMyList(s) {
+  const owned = store_.get(OWNED_KEY) || [];
+  if (!owned.includes(s)) store_.set(OWNED_KEY, [...owned, s].slice(-20));
+}
+async function isMyList(s) {
+  if ((store_.get(OWNED_KEY) || []).includes(s)) return true;
+  const ids = (NFA_CONFIG.extensionIds || []);
+  const rt = window.chrome && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime : null;
+  if (!rt || !ids.length) return false;
+  const ask = (id) => new Promise((resolve) => {
+    setTimeout(() => resolve(false), 1000); // extension missing or asleep: don't hold up the page
+    try {
+      rt.sendMessage(id, { type: "nfa-owns", slug: s }, (r) => { void chrome.runtime.lastError; resolve(!!(r && r.owns === true)); });
+    } catch (e) { resolve(false); }
+  });
+  const mine = (await Promise.all(ids.map(ask))).some(Boolean);
+  if (mine) rememberMyList(s);
+  return mine;
+}
 
 load();
