@@ -1,5 +1,7 @@
 // NFA Wishlist share page.
-//   Friends:  ?list=<slug>                → view + "I bought this"; hover ⋯ = Open in new tab / Copy link
+//   Friends:  ?list=<slug>                → view + one-click "Mark as purchased" (undo only from the same
+//                                            browser); hover ⋯ = Open in new tab / Copy link; after visiting a
+//                                            store page, coming back asks "Did you buy …?"
 //   Owner:    ?list=<slug>&edit=<token>   → same cards as the extension: 🗑 with Undo, ⋯ menu,
 //                                            click-to-edit name/description/price, drag to reorder,
 //                                            share button + list menu. Never any claim info.
@@ -145,6 +147,7 @@ async function load() {
   renderHeader(owner);
   items = Array.isArray(data.items) ? data.items : [];
   render(owner);
+  maybeAsk();
 }
 
 function renderHeader(owner) {
@@ -154,7 +157,7 @@ function renderHeader(owner) {
     ? "This is your private edit link. Don't share it. Use the share button to send friends their own link. What's been bought stays hidden from you."
     : owner
       ? "This is your list. What's been bought stays hidden from you, so it's still a surprise."
-      : "Tap “I bought this” when you get something, so nobody doubles up. The list owner never sees what's been bought or by whom.";
+      : "Tap “Mark as purchased” when you get something, so nobody doubles up. The list owner never sees what's been bought.";
   $("#shareBtn").hidden = !isEdit;
   $("#listMenuBtn").hidden = !isEdit;
   $("#intro").hidden = false;
@@ -198,7 +201,7 @@ function card(tpl, it, owner) {
   if (link) {
     media.classList.add("linked");
     media.title = `Open on ${it.store || "the store's site"}`;
-    media.addEventListener("click", (e) => { if (!e.target.closest("button, a")) openNewTab(link); });
+    media.addEventListener("click", (e) => { if (!e.target.closest("button, a")) visitStore(it, link, owner); });
   }
 
   // Overlay: store name, ⋯ menu, and (edit link only) 🗑
@@ -208,7 +211,7 @@ function card(tpl, it, owner) {
     e.stopPropagation();
     const isFirst = !node.previousElementSibling;
     openMenu(more, [
-      link && { icon: "open", label: "Open in new tab", run: () => openNewTab(link) },
+      link && { icon: "open", label: "Open in new tab", run: () => visitStore(it, link, owner) },
       link && { icon: "copy", label: "Copy link", run: () => copyText(link, "Link copied.") },
       isEdit && !isFirst && { icon: "top", label: "Move to top", run: () => moveToTop(it) },
       isEdit && { icon: "edit", label: "Edit details", run: () => $(".t-name", node).click() },
@@ -229,7 +232,7 @@ function card(tpl, it, owner) {
     node.querySelectorAll(".txt > div").forEach((el) => makeEditable(el, it, node));
     makeDraggable(node, it);
   } else if (!owner) {
-    if (it.claimed === true) markClaimed(node); else wireClaim(node, it);
+    wireClaim(node, it);
   }
   return node;
 }
@@ -421,40 +424,106 @@ function downloadList() {
   toast("List downloaded.");
 }
 
-// ---------- friends: "I bought this" ----------
+// ---------- friends: one-click "Mark as purchased" ----------
+// No names. Marking returns a private token that only this browser keeps (localStorage), and only that
+// token can undo it. Lost tokens (cleared browser data, other phone) just mean that mark can't be undone here.
 
-function markClaimed(node) {
+const MINE_KEY = "nfa-purchases";      // { [itemId]: token }
+const VISIT_KEY = "nfa-visit";         // { slug, itemId, at } — last store page a friend opened from here
+const store_ = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+const mine = () => store_.get(MINE_KEY) || {};
+const setMine = (id, token) => { const m = mine(); if (token) m[id] = token; else delete m[id]; store_.set(MINE_KEY, m); };
+const cards = new Map();               // itemId → { node, it }
+
+function wireClaim(node, it) {
+  cards.set(it.id, { node, it });
+  const token = mine()[it.id];
+  if (it.claimed === true) showClaimed(node, it, !!token);
+  else { if (token) setMine(it.id, null); showUnclaimed(node, it); }
+  $(".buy", node).onclick = () => markPurchased(it);
+  $(".unbuy", node).onclick = () => unmarkPurchased(it);
+}
+function showUnclaimed(node, it) {
+  it.claimed = false;
+  node.classList.remove("claimed");
+  $(".badge-claimed", node).hidden = true;
+  $(".badge-out", node).hidden = it.in_stock !== false;
+  $(".buy", node).hidden = false; $(".buy", node).disabled = false;
+  $(".unbuy", node).hidden = true;
+}
+function showClaimed(node, it, isMine) {
+  it.claimed = true;
   node.classList.add("claimed");
-  $(".badge-claimed", node).hidden = false;
+  const badge = $(".badge-claimed", node);
+  badge.textContent = isMine ? "You marked this purchased" : "Someone's got this";
+  badge.hidden = false;
   $(".badge-out", node).hidden = true; // same corner; stock doesn't matter once it's bought
   $(".buy", node).hidden = true;
-  $(".claim", node).hidden = true;
+  $(".unbuy", node).hidden = !isMine; $(".unbuy", node).disabled = false;
 }
-function wireClaim(node, it) {
-  const buy = $(".buy", node), form = $(".claim", node), input = $(".claim-name", node);
-  buy.hidden = false;
-  buy.onclick = () => {
-    form.hidden = false; buy.hidden = true;
-    try { input.value = localStorage.getItem("nfa-name") || ""; } catch (e) {}
-    input.focus();
-  };
-  $(".claim-cancel", node).onclick = () => { form.hidden = true; buy.hidden = false; };
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-    const name = input.value.replace(/\s+/g, " ").trim();
-    if (!name) { input.focus(); return; }
-    const submit = form.querySelector('[type="submit"]');
-    submit.disabled = true;
-    try {
-      const ok = await rpc("claim_item", { p_slug: slug, p_item_id: it.id, p_name: name.slice(0, 60) });
-      try { localStorage.setItem("nfa-name", name); } catch (err) {}
-      markClaimed(node);
-      toast(ok ? "Thanks! It's marked as bought." : "Someone already got this one.");
-    } catch (err) {
-      toast(/owners cannot claim/i.test(err.message) ? "This is your own list." : "Couldn't save that. Try again.");
-      submit.disabled = false;
+async function markPurchased(it) {
+  const c = cards.get(it.id); if (!c) return;
+  $(".buy", c.node).disabled = true;
+  try {
+    const token = await rpc("mark_purchased", { p_slug: slug, p_item_id: it.id });
+    if (token) {
+      setMine(it.id, token);
+      showClaimed(c.node, it, true);
+      toast("Marked as purchased.", () => unmarkPurchased(it));
+    } else {
+      showClaimed(c.node, it, false);
+      toast("Someone already got this one.");
     }
-  };
+  } catch (e) {
+    $(".buy", c.node).disabled = false;
+    toast(/owners cannot claim/i.test(e.message) ? "This is your own list." : "Couldn't save that. Try again.");
+  }
 }
+async function unmarkPurchased(it) {
+  const c = cards.get(it.id); const token = mine()[it.id];
+  if (!c || !token) return;
+  $(".unbuy", c.node).disabled = true;
+  try {
+    const ok = await rpc("unmark_purchased", { p_slug: slug, p_item_id: it.id, p_token: token });
+    setMine(it.id, null);
+    if (ok) { showUnclaimed(c.node, it); toast("No longer marked as purchased."); }
+    else { showClaimed(c.node, it, false); toast("Couldn't undo that one."); }
+  } catch (e) {
+    $(".unbuy", c.node).disabled = false;
+    toast("Couldn't undo. Try again.");
+  }
+}
+
+// Remember which store page a friend opened, so coming back can ask "Did you buy …?"
+function visitStore(it, link, owner) {
+  if (!owner && !isEdit && !it.claimed) store_.set(VISIT_KEY, { slug, itemId: it.id, at: Date.now() });
+  openNewTab(link);
+}
+const ASK_MIN_MS = 4000;                 // ignore quick tab flips
+const ASK_MAX_MS = 3 * 24 * 3600 * 1000; // forget after 3 days
+function maybeAsk() {
+  if (isEdit || document.body.classList.contains("owner-view") || !$("#ask").hidden) return;
+  const v = store_.get(VISIT_KEY);
+  if (!v || v.slug !== slug) return;
+  const age = Date.now() - v.at;
+  if (age > ASK_MAX_MS) { store_.del(VISIT_KEY); return; }
+  if (age < ASK_MIN_MS) return;
+  const c = cards.get(v.itemId);
+  if (!c || c.it.claimed) { store_.del(VISIT_KEY); return; }
+  store_.del(VISIT_KEY);                  // ask once
+  $("#askText").textContent = `Did you buy ${c.it.name || "this"}?`;
+  const img = $("#askImg"), src = imageLink(c.it);
+  if (src) { img.src = src; img.hidden = false; img.onerror = () => { img.hidden = true; }; } else img.hidden = true;
+  $("#ask").hidden = false;
+  $("#askYes").onclick = () => { $("#ask").hidden = true; markPurchased(c.it); };
+  $("#askNo").onclick = () => { $("#ask").hidden = true; };
+  $("#askYes").focus({ preventScroll: true });
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") maybeAsk(); });
+window.addEventListener("focus", maybeAsk);
 
 load();

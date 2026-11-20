@@ -64,6 +64,18 @@
     <span data-icon="download"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></span>
   </template>
 
+  <!-- "Did you buy it?" after a friend comes back from a store page -->
+  <section id="ask" class="ask" role="dialog" aria-labelledby="askText" hidden>
+    <img id="askImg" class="ask-img" alt="" referrerpolicy="no-referrer" />
+    <div class="ask-body">
+      <p id="askText" class="ask-text"></p>
+      <div class="ask-actions">
+        <button id="askYes" class="pill pill-solid" type="button">Yes, mark as purchased</button>
+        <button id="askNo" class="pill pill-ghost" type="button">Not yet</button>
+      </div>
+    </div>
+  </section>
+
   <!-- Toast (with Undo after deletes) -->
   <div id="toast" class="toast" role="status" aria-live="polite" hidden>
     <span class="toast-msg"></span>
@@ -105,16 +117,9 @@
         <div class="t-desc" data-field="description" data-placeholder="Add a description"></div>
         <div class="t-price" data-field="price" data-placeholder="Add a price"></div>
       </div>
-      <!-- Friends only -->
-      <button class="pill pill-solid buy" type="button" hidden>I bought this</button>
-      <form class="claim" hidden>
-        <label class="claim-label">Your name. The list owner never sees who bought what.</label>
-        <input class="claim-name" type="text" maxlength="60" autocomplete="name" placeholder="e.g. Aunt Jo" required />
-        <div class="row-end">
-          <button class="pill pill-ghost claim-cancel" type="button">Cancel</button>
-          <button class="pill pill-solid" type="submit">Mark as bought</button>
-        </div>
-      </form>
+      <!-- Friends only: one click, no name. Only the browser that marked it can undo. -->
+      <button class="pill pill-solid buy" type="button" hidden>Mark as purchased</button>
+      <button class="pill pill-ghost unbuy" type="button" hidden>Undo purchase</button>
     </article>
   </template>
 
