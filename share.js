@@ -157,6 +157,7 @@ window.addEventListener("scroll", () => {
 function setState(msg) { const s = $("#state"); s.textContent = msg || ""; s.hidden = !msg; }
 
 async function load() {
+  if (!slug) { showLanding(); return; } // nfawishlist.com with no list code → home page
   if (!/^[A-Za-z0-9_-]{6,64}$/.test(slug)) { setState("This link is missing its list code. Ask for the link again."); return; }
   let data, ownsHere = false;
   try {
@@ -180,6 +181,13 @@ async function load() {
   items = Array.isArray(data.items) ? data.items : [];
   render(owner);
   maybeAsk();
+}
+
+function showLanding() {
+  setState("");
+  document.body.classList.add("home");
+  document.title = "NFA Wishlist · Shop small, shop local";
+  $("#landing").hidden = false;
 }
 
 function renderHeader(owner) {
