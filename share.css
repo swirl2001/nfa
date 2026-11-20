@@ -101,9 +101,22 @@ button { font: inherit; cursor: pointer; color: inherit; }
   gap: 8px; padding: 12px; text-align: center; color: var(--muted); font-size: 13px;
 }
 .noimg-store { font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
-.alt { display: flex; flex-direction: column; align-items: center; gap: 6px; line-height: 1.5; }
-.alt a { font-weight: 600; }
-.alt-badge { background: var(--ink); color: var(--bg); font-weight: 700; font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+/* Amazon item card (Figma "NFA card", 262×324): grey card, Sean's scribble + NFA mark cropped by the
+   card, "no Amazon links" badge, links to Etsy / other shops. Sizes scale with the card (cqw = % of
+   card width), so it looks the same in the popup, side panel and website. Fixed light colors in both
+   themes, like a photo. */
+.media { container-type: inline-size; }
+.alt { position: absolute; inset: 0; background: #ebebeb; color: #000; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; }
+.alt-art { position: absolute; left: -76.8%; top: -16.25%; width: 314.5%; height: auto; max-width: none; pointer-events: none; user-select: none; }
+.alt-badge {
+  position: absolute; left: 50%; top: 65.1%; transform: translateX(-50%); white-space: nowrap;
+  background: #000; color: #fff; font-size: 6.49cqw; line-height: 1.24; padding: 1.53cqw 3.05cqw;
+}
+.alt-etsy, .alt-web { position: absolute; top: 81.2%; color: #000; font-size: 6.1cqw; line-height: 1.2; text-decoration: none; white-space: nowrap; }
+.alt-etsy { left: 5.73%; }
+.alt-web { right: 8%; }
+.alt .u { text-decoration: underline; }
+.alt a:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
 .badge {
   position: absolute; left: 8px; top: 8px; background: var(--badge-bg); color: var(--ink);
   border: 1px solid var(--line); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
