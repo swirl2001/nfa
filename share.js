@@ -10,6 +10,7 @@
 // Hard rules: no Amazon links/images (amazon.js), plain store links only (no affiliate tags),
 // the owner never sees claim status.
 
+if (location.hostname === "www.nfawishlist.com") location.replace("https://nfawishlist.com" + location.pathname + location.search);
 const $ = (s, el = document) => el.querySelector(s);
 const params = new URLSearchParams(location.search);
 const slug = (params.get("list") || "").trim();
