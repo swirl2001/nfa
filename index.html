@@ -48,6 +48,9 @@
   <main class="wrap">
     <p id="state" class="state">Loading the list…</p>
     <section id="items" class="grid" aria-live="polite"></section>
+    <!-- Friends only: items someone already got, moved here on page load -->
+    <h2 id="boughtHead" class="section-h" hidden>Purchased</h2>
+    <section id="bought" class="grid" hidden></section>
   </main>
 
   <footer class="foot">
@@ -101,7 +104,6 @@
         <!-- Real link over the photo, so Cmd/Ctrl-click and middle-click open a background tab -->
         <a class="media-link" target="_blank" rel="noopener noreferrer" draggable="false" hidden></a>
         <span class="badge badge-out" hidden>Out of stock</span>
-        <span class="badge badge-claimed" hidden>Someone's got this</span>
         <div class="overlay">
           <button class="ov-btn del" type="button" aria-label="Remove from list" title="Remove" hidden>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
@@ -120,8 +122,10 @@
         <div class="t-price" data-field="price" data-placeholder="Add a price"></div>
       </div>
       <!-- Friends only: one click, no name. Only the browser that marked it can undo. -->
-      <button class="pill pill-solid buy" type="button" hidden>Mark as purchased</button>
-      <button class="pill pill-ghost unbuy" type="button" hidden>Undo purchase</button>
+      <button class="pill pill-small buy" type="button" hidden>Mark as purchased</button>
+      <button class="pill pill-small unbuy" type="button" aria-label="I got this. Click to undo." hidden>
+        <span class="unbuy-on">✓ I got this</span><span class="unbuy-hover">Undo</span>
+      </button>
     </article>
   </template>
 

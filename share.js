@@ -172,7 +172,15 @@ function render(owner) {
   if (!list.length) { setState(isEdit ? "Your list is empty. Save things with the NFA Wishlist extension." : "Nothing on this list yet."); return; }
   setState("");
   const tpl = $("#itemTpl");
-  list.forEach((it) => grid.appendChild(card(tpl, it, owner)));
+  // Friends: what's still available stays on top; anything already bought moves to a
+  // "Purchased" section at the bottom. (Only on load: a fresh mark stays put so Undo is easy.)
+  const friends = !isEdit && !owner;
+  const bought = friends ? list.filter((it) => it.claimed === true) : [];
+  list.filter((it) => !bought.includes(it)).forEach((it) => grid.appendChild(card(tpl, it, owner)));
+  const boughtGrid = $("#bought");
+  boughtGrid.textContent = "";
+  bought.forEach((it) => boughtGrid.appendChild(card(tpl, it, owner)));
+  boughtGrid.hidden = $("#boughtHead").hidden = !bought.length;
 }
 
 // ---------- cards ----------
@@ -456,7 +464,6 @@ function wireClaim(node, it) {
 function showUnclaimed(node, it) {
   it.claimed = false;
   node.classList.remove("claimed");
-  $(".badge-claimed", node).hidden = true;
   $(".badge-out", node).hidden = it.in_stock !== false;
   $(".buy", node).hidden = false; $(".buy", node).disabled = false;
   $(".unbuy", node).hidden = true;
@@ -464,10 +471,7 @@ function showUnclaimed(node, it) {
 function showClaimed(node, it, isMine) {
   it.claimed = true;
   node.classList.add("claimed");
-  const badge = $(".badge-claimed", node);
-  badge.textContent = isMine ? "You marked this purchased" : "Someone's got this";
-  badge.hidden = false;
-  $(".badge-out", node).hidden = true; // same corner; stock doesn't matter once it's bought
+  $(".badge-out", node).hidden = true; // stock doesn't matter once it's bought
   $(".buy", node).hidden = true;
   $(".unbuy", node).hidden = !isMine; $(".unbuy", node).disabled = false;
 }
@@ -479,6 +483,10 @@ async function markPurchased(it) {
     if (token) {
       setMine(it.id, token);
       showClaimed(c.node, it, true);
+      // The pointer is still on the button: keep "✓ I got this" until it moves away, then hover = Undo.
+      const ub = $(".unbuy", c.node);
+      ub.classList.add("fresh");
+      ub.addEventListener("mouseleave", () => ub.classList.remove("fresh"), { once: true });
       toast("Marked as purchased.", () => unmarkPurchased(it));
     } else {
       showClaimed(c.node, it, false);
