@@ -179,8 +179,10 @@ function render(owner) {
   const tpl = $("#itemTpl");
   // Friends: what's still available stays on top; anything already bought moves to a
   // "Purchased" section at the bottom. (Only on load: a fresh mark stays put so Undo is easy.)
+  // Owner (edit link): things they marked "I own this" move down the same way. Never friends' marks.
   const friends = !isEdit && !owner;
-  const bought = friends ? list.filter((it) => it.claimed === true) : [];
+  const bought = isEdit ? list.filter((it) => it.owned === true)
+    : friends ? list.filter((it) => it.claimed === true) : [];
   list.filter((it) => !bought.includes(it)).forEach((it) => grid.appendChild(card(tpl, it, owner)));
   const boughtGrid = $("#bought");
   boughtGrid.textContent = "";
@@ -250,10 +252,58 @@ function card(tpl, it, owner) {
     del.onclick = (e) => { e.stopPropagation(); removeItem(it, node); };
     node.querySelectorAll(".txt > div").forEach((el) => makeEditable(el, it, node));
     makeDraggable(node, it);
+    wireOwned(node, it);
   } else if (!owner) {
     wireClaim(node, it);
   }
   return node;
+}
+
+// Right after a click the pointer is still on the button: keep "✓ I gifted/own this" showing (not
+// "Undo") until the pointer is seen off the button. (mouseleave isn't reliable for a button that
+// appeared under a pointer that hasn't moved, so watch pointer moves on the page instead.)
+function holdLabel(btn) {
+  btn.classList.add("fresh");
+  const off = (e) => {
+    if (btn.contains(e.target)) return;
+    btn.classList.remove("fresh");
+    document.removeEventListener("pointermove", off, true);
+  };
+  document.addEventListener("pointermove", off, true);
+}
+
+// ---------- owner: "Mark as purchased" → "✓ I own this" (their own flag, separate from friends' marks) ----------
+
+function wireOwned(node, it) {
+  const buy = $(".buy", node), unbuy = $(".unbuy", node);
+  $(".unbuy-on", node).textContent = "✓ I own this";
+  unbuy.setAttribute("aria-label", "I own this. Click to undo.");
+  const show = () => {
+    node.classList.toggle("claimed", it.owned === true);
+    buy.hidden = it.owned === true;
+    unbuy.hidden = it.owned !== true;
+  };
+  show();
+  async function setOwned(value) {
+    buy.disabled = unbuy.disabled = true;
+    try {
+      if (!(await ownerRpc("owner_set_owned", { p_item_id: it.id, p_owned: value }))) throw new Error("not saved");
+      it.owned = value;
+      show();
+      if (value) {
+        holdLabel(unbuy);
+        toast("Marked as yours. Friends will see it's taken.", () => setOwned(false));
+      } else {
+        toast("No longer marked as yours.");
+      }
+    } catch (e) {
+      toast("Couldn't save that. Try again.");
+    } finally {
+      buy.disabled = unbuy.disabled = false;
+    }
+  }
+  buy.onclick = (e) => { e.stopPropagation(); setOwned(true); };
+  unbuy.onclick = (e) => { e.stopPropagation(); setOwned(false); };
 }
 
 // ---------- owner: remove / undo / move / edit / reorder ----------
@@ -488,10 +538,7 @@ async function markPurchased(it) {
     if (token) {
       setMine(it.id, token);
       showClaimed(c.node, it, true);
-      // The pointer is still on the button: keep "✓ I gifted this" until it moves away, then hover = Undo.
-      const ub = $(".unbuy", c.node);
-      ub.classList.add("fresh");
-      ub.addEventListener("mouseleave", () => ub.classList.remove("fresh"), { once: true });
+      holdLabel($(".unbuy", c.node));
       toast("Marked as purchased.", () => unmarkPurchased(it));
     } else {
       showClaimed(c.node, it, false);
