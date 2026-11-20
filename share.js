@@ -197,11 +197,17 @@ function card(tpl, it, owner) {
   }
   $(".badge-out", node).hidden = it.in_stock !== false;
 
-  // Click photo → store page (buttons/links on the photo keep their own behavior)
+  // Photo is a real link to the store page: a plain click opens a new tab; Cmd/Ctrl-click or
+  // middle-click opens it in the background (only real links can do that; scripts can't).
   if (link) {
-    media.classList.add("linked");
-    media.title = `Open on ${it.store || "the store's site"}`;
-    media.addEventListener("click", (e) => { if (!e.target.closest("button, a")) visitStore(it, link, owner); });
+    const a = $(".media-link", node);
+    a.href = link;
+    a.hidden = false;
+    a.title = `Open on ${it.store || "the store's site"}`;
+    a.setAttribute("aria-label", `Open ${it.name || "item"} on ${it.store || "the store's site"}`);
+    const note = () => recordVisit(it, owner);
+    a.addEventListener("click", note);
+    a.addEventListener("auxclick", (e) => { if (e.button === 1) note(); });
   }
 
   // Overlay: store name, ⋯ menu, and (edit link only) 🗑
@@ -499,8 +505,11 @@ async function unmarkPurchased(it) {
 }
 
 // Remember which store page a friend opened, so coming back can ask "Did you buy …?"
-function visitStore(it, link, owner) {
+function recordVisit(it, owner) {
   if (!owner && !isEdit && !it.claimed) store_.set(VISIT_KEY, { slug, itemId: it.id, at: Date.now() });
+}
+function visitStore(it, link, owner) {
+  recordVisit(it, owner);
   openNewTab(link);
 }
 const ASK_MIN_MS = 4000;                 // ignore quick tab flips

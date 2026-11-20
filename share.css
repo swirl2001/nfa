@@ -92,7 +92,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   position: relative; aspect-ratio: 4 / 5; border-radius: 14px; overflow: hidden;
   background: var(--card); box-shadow: var(--shadow);
 }
-.media.linked { cursor: pointer; }
+.media-link { position: absolute; inset: 0; cursor: pointer; -webkit-user-drag: none; }
+.owner .media-link { cursor: grab; }
+.media-link:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; border-radius: 14px; }
 .img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .noimg {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -113,9 +115,13 @@ button { font: inherit; cursor: pointer; color: inherit; }
   position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .15s;
   background: linear-gradient(to bottom, transparent 55%, rgba(0, 0, 0, .55));
 }
-.media:hover .overlay, .media:focus-within .overlay, .card.menu-open .overlay { opacity: 1; pointer-events: auto; }
+/* The overlay never catches clicks itself (the photo link underneath does); only its buttons do. */
+.ov-btn { pointer-events: none; }
+.media:hover .overlay, .media:focus-within .overlay, .card.menu-open .overlay { opacity: 1; }
+.media:hover .ov-btn, .media:focus-within .ov-btn, .card.menu-open .ov-btn { pointer-events: auto; }
 @media (hover: none) {
-  .overlay { opacity: 1; pointer-events: auto; background: none; }
+  .overlay { opacity: 1; background: none; }
+  .ov-btn { pointer-events: auto; }
   .ov-store { display: none; }
 }
 .card.dragging .overlay { opacity: 0; }
