@@ -63,9 +63,21 @@ function toast(msg, onUndo = null) {
   undo.hidden = !onUndo;
   undo.onclick = () => { hideToast(); onUndo(); };
   t.hidden = false;
+  toast.ms = onUndo ? 6000 : 3500;
   clearTimeout(toast.t);
-  toast.t = setTimeout(hideToast, onUndo ? 6000 : 3500);
+  toast.t = setTimeout(hideToast, toast.ms);
 }
+// Keep the message (and its Undo) up while the pointer or keyboard focus is on it.
+{
+  const t = $("#toast");
+  const hold = () => clearTimeout(toast.t);
+  const resume = () => { if (!t.hidden && !t.matches(":hover") && !t.contains(document.activeElement)) { clearTimeout(toast.t); toast.t = setTimeout(hideToast, toast.ms || 3500); } };
+  t.addEventListener("mouseenter", hold); t.addEventListener("focusin", hold);
+  t.addEventListener("mouseleave", resume); t.addEventListener("focusout", () => setTimeout(resume, 0));
+}
+// Screen-reader-only announcement (things that appear without moving focus).
+function announce(msg) { const r = $("#sr"); r.textContent = ""; setTimeout(() => { r.textContent = msg; }, 50); }
+const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 function hideToast() { $("#toast").hidden = true; clearTimeout(toast.t); }
 $("#toast .toast-close").onclick = hideToast;
 
@@ -97,7 +109,8 @@ function openMenu(anchor, entries, cardNode = null) {
     if (icon) b.appendChild(icon.cloneNode(true));
     const label = document.createElement("span"); label.textContent = en.label; b.appendChild(label);
     if (en.hint) { const h = document.createElement("span"); h.className = "menu-hint"; h.textContent = en.hint; b.appendChild(h); }
-    b.onclick = (e) => { e.stopPropagation(); closeMenu(); en.run(); };
+    b.tabIndex = -1;
+    b.onclick = (e) => { e.stopPropagation(); closeMenu(true); en.run(); };
     menu.appendChild(b);
   });
   menu.hidden = false;
@@ -112,14 +125,27 @@ function openMenu(anchor, entries, cardNode = null) {
   menu.style.left = `${left}px`;
   menu.querySelector(".menu-item").focus({ preventScroll: true });
 }
-function closeMenu() {
+// returnFocus: put keyboard focus back on the ⋯ button that opened the menu.
+function closeMenu(returnFocus = false) {
   $("#menu").hidden = true;
   document.querySelectorAll(".menu-open").forEach((n) => n.classList.remove("menu-open"));
-  if (menuOwner) menuOwner.setAttribute("aria-expanded", "false");
+  const owner = menuOwner;
+  if (owner) owner.setAttribute("aria-expanded", "false");
   menuOwner = null;
+  if (returnFocus && owner && owner.isConnected) owner.focus({ preventScroll: true });
 }
 document.addEventListener("click", (e) => { if (!e.target.closest("#menu")) closeMenu(); });
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#menu").hidden) { e.preventDefault(); closeMenu(true); } });
+$("#menu").addEventListener("keydown", (e) => {
+  const list = [...$("#menu").querySelectorAll(".menu-item")];
+  const i = list.indexOf(document.activeElement);
+  const go = (k) => { e.preventDefault(); list[(k + list.length) % list.length].focus(); };
+  if (e.key === "ArrowDown") go(i + 1);
+  else if (e.key === "ArrowUp") go(i - 1);
+  else if (e.key === "Home") go(0);
+  else if (e.key === "End") go(list.length - 1);
+  else if (e.key === "Tab") { e.preventDefault(); closeMenu(true); }
+});
 window.addEventListener("scroll", () => {
   closeMenu();
   $("#head").classList.toggle("scrolled", window.scrollY > 0);
@@ -227,14 +253,22 @@ function card(tpl, it, owner) {
 
   // Overlay: store name, ⋯ menu, and (edit link only) 🗑
   $(".ov-store", node).textContent = amazon ? "" : (it.store || "");
+  const label = it.name || "this item";
   const more = $(".more", node);
+  more.setAttribute("aria-label", `More options for ${label}`);
+  $(".del", node).setAttribute("aria-label", `Remove ${label}`);
+  $(".buy", node).setAttribute("aria-label", `Mark ${label} as purchased`);
+  $(".unbuy", node).setAttribute("aria-label", `I gifted ${label}. Click to undo.`);
   more.onclick = (e) => {
     e.stopPropagation();
-    const isFirst = !node.previousElementSibling;
+    const inTop = node.parentElement === $("#items");
+    const isFirst = !node.previousElementSibling, isLast = !node.nextElementSibling;
     openMenu(more, [
       link && { icon: "open", label: "Open in new tab", run: () => visitStore(it, link, owner) },
       link && { icon: "copy", label: "Copy link", run: () => copyText(link, "Link copied.") },
-      isEdit && !isFirst && { icon: "top", label: "Move to top", run: () => moveToTop(it) },
+      isEdit && inTop && !isFirst && { icon: "top", label: "Move to top", run: () => moveToTop(it) },
+      isEdit && inTop && !isFirst && { icon: "up", label: "Move up", run: () => moveBy(it, node, -1) },
+      isEdit && inTop && !isLast && { icon: "down", label: "Move down", run: () => moveBy(it, node, 1) },
       isEdit && { icon: "edit", label: "Edit details", run: () => $(".t-name", node).click() },
     ], node);
   };
@@ -264,9 +298,10 @@ function card(tpl, it, owner) {
 function wireOwned(node, it) {
   const buy = $(".buy", node), unbuy = $(".unbuy", node);
   $(".unbuy-on", node).textContent = "✓ I own this";
-  unbuy.setAttribute("aria-label", "I own this. Click to undo.");
+  unbuy.setAttribute("aria-label", `I own ${it.name || "this item"}. Click to undo.`);
+  // Owner's own page: items they own stay in full colour (greyed-out is only for friends,
+  // where it means "not available"). They still move to the bottom section on the next load.
   const show = () => {
-    node.classList.toggle("claimed", it.owned === true);
     buy.hidden = it.owned === true;
     unbuy.hidden = it.owned !== true;
   };
@@ -319,14 +354,44 @@ async function moveToTop(it) {
   const sorted = [...items].sort(byPosition);
   if (sorted[0] === it) return;
   const top = sorted[0].position ?? 0;
-  try { await setPosition(it, top - 1); render(true); window.scrollTo({ top: 0, behavior: "smooth" }); }
-  catch (e) { toast("Couldn't move that. Try again."); }
+  try {
+    await setPosition(it, top - 1); render(true);
+    window.scrollTo({ top: 0, behavior: reduceMotion() ? "auto" : "smooth" });
+    refocus(it); announce(`${it.name || "Item"} moved to the top.`);
+  } catch (e) { toast("Couldn't move that. Try again."); }
+}
+
+// Keyboard/no-drag reorder: one step up (-1) or down (+1) within the main grid.
+async function moveBy(it, node, dir) {
+  const cards = [...$("#items").children];
+  const i = cards.indexOf(node), j = i + dir;
+  if (i < 0 || j < 0 || j >= cards.length) return;
+  const pos = (n) => { const x = n && items.find((y) => y.id === n.dataset.id); return x ? x.position : null; };
+  // New spot: between the neighbour we jump over and the one after it.
+  const a = pos(cards[j]), b = pos(cards[j + dir]);
+  const p = b == null ? a + dir : (a + b) / 2;
+  try {
+    if (a == null || (b != null && Math.abs(b - a) < 1e-9)) { // missing/too-close positions: renumber in the new order
+      cards.splice(j, 0, cards.splice(i, 1)[0]);
+      for (let k = 0; k < cards.length; k++) await setPosition(items.find((y) => y.id === cards[k].dataset.id), k);
+    } else {
+      await setPosition(it, p);
+    }
+    render(true); refocus(it);
+    announce(`${it.name || "Item"} moved ${dir < 0 ? "up" : "down"}.`);
+  } catch (e) { toast("Couldn't move that. Try again."); }
+}
+// After a re-render, put focus back on the moved card's ⋯ button.
+function refocus(it) {
+  const btn = document.querySelector(`.card[data-id="${CSS.escape(it.id)}"] .more`);
+  if (btn) btn.focus({ preventScroll: false });
 }
 
 function makeEditable(el, it, cardNode) {
   const field = el.dataset.field;
   el.tabIndex = 0;
   el.setAttribute("role", "textbox");
+  el.setAttribute("aria-label", { name: "Item name", description: `Description for ${it.name || "item"}`, price: `Price for ${it.name || "item"}` }[field] || field);
   el.title = "Click to edit";
   let before = "";
   const start = () => {
@@ -573,8 +638,10 @@ function maybeAsk() {
   const img = $("#askImg"), src = imageLink(c.it);
   if (src) { img.src = src; img.hidden = false; img.onerror = () => { img.hidden = true; }; } else img.hidden = true;
   $("#ask").hidden = false;
-  $("#askYes").onclick = () => { $("#ask").hidden = true; markPurchased(c.it); };
-  $("#askNo").onclick = () => { $("#ask").hidden = true; };
+  // After answering, keyboard focus goes back to that item (not the top of the page).
+  const back = (sel) => { const el = $(sel, c.node) || $(".media-link", c.node); if (el && !el.hidden) el.focus({ preventScroll: false }); };
+  $("#askYes").onclick = async () => { $("#ask").hidden = true; await markPurchased(c.it); back(".unbuy"); };
+  $("#askNo").onclick = () => { $("#ask").hidden = true; back(".buy"); };
   $("#askYes").focus({ preventScroll: true });
 }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") maybeAsk(); });

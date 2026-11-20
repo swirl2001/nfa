@@ -14,15 +14,15 @@
   <link rel="stylesheet" href="share.css" />
 </head>
 <body>
-  <div id="head" class="head">
-    <header class="top">
+  <header id="head" class="head">
+    <div class="top">
       <div class="brand">
         <img class="brand-mark" src="raven.svg" width="28" height="28" alt="" />
         <span class="logo">NFA</span>
         <span class="brand-name">Wishlist</span>
         <span class="tagline">shop small, shop local</span>
       </div>
-    </header>
+    </div>
     <section id="intro" class="intro wrap-x" hidden>
       <div class="title-row">
         <h1 id="title" class="title"></h1>
@@ -44,26 +44,22 @@
       </form>
       <p id="explainer" class="explainer"></p>
     </section>
-  </div>
+  </header>
 
   <main class="wrap">
     <p id="state" class="state">Loading the list…</p>
-    <section id="items" class="grid" aria-live="polite"></section>
+    <section id="items" class="grid" aria-label="Wishlist items"></section>
     <!-- Friends only: items someone already got, moved here on page load -->
     <h2 id="boughtHead" class="section-h" hidden>Purchased</h2>
-    <section id="bought" class="grid" hidden></section>
-  </main>
-
-  <footer class="foot">
-    <p>Made with <b>NFA Wishlist</b>, a free extension for saving gifts from independent shops. No Amazon links, ever.</p>
-  </footer>
-
+    <section id="bought" class="grid" aria-labelledby="boughtHead" hidden></section>
   <!-- One floating menu, filled in for whichever ⋯ was clicked -->
   <div id="menu" class="menu" role="menu" hidden></div>
   <template id="menuIcons">
     <span data-icon="open"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></span>
     <span data-icon="copy"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1zM5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg></span>
     <span data-icon="top"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14M12 20V9M7 13l5-5 5 5"/></svg></span>
+    <span data-icon="up"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>
+    <span data-icon="down"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span>
     <span data-icon="edit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg></span>
     <span data-icon="download"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></span>
   </template>
@@ -88,6 +84,12 @@
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </div>
+    <div id="sr" class="sr-only" aria-live="polite"></div>
+  </main>
+
+  <footer class="foot">
+    <p>Made with <b>NFA Wishlist</b>, a free extension for saving gifts from independent shops. No Amazon links, ever.</p>
+  </footer>
 
   <template id="itemTpl">
     <article class="card">
