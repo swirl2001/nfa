@@ -1148,8 +1148,11 @@ async function saveNewItem(btn) {
   }
 }
 
-// Very wide or very tall photos would lose a lot in a square box: show them whole instead.
+// The photo box takes the photo's own shape, capped between 2:3 (tall) and 16:10 (wide), so photos
+// fill it without bars; only extreme shapes get trimmed a little. Cards in a row may differ in height.
 function fitPhoto(img) {
   const r = img.naturalWidth / img.naturalHeight;
-  img.classList.toggle("fit-whole", !!r && (r > 1.25 || r < 0.8));
+  const box = img.closest(".media");
+  if (!box || !r || !Number.isFinite(r)) return;
+  box.style.aspectRatio = String(Math.min(1.6, Math.max(2 / 3, r)));
 }

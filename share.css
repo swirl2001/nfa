@@ -89,7 +89,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .card.dragging { opacity: .35; }
 .owner .card { cursor: grab; }
 .media {
-  position: relative; aspect-ratio: 1 / 1; border-radius: 14px; overflow: hidden;
+  position: relative; aspect-ratio: 4 / 5; border-radius: 14px; overflow: hidden;
   background: var(--card); box-shadow: var(--shadow);
 }
 .media-link { position: absolute; inset: 0; cursor: pointer; -webkit-user-drag: none; }
@@ -446,6 +446,5 @@ select:disabled { opacity: .55; cursor: default; }
 .landing-sign { font-weight: 600; margin-top: 4px; }
 .landing-sign::before { content: "— "; }
 
-/* Photos: square box. Close-to-square photos fill it; very wide or tall ones (e.g. a TV) are shown
-   whole on white instead of being cropped hard (class set by fitPhoto() when the photo loads). */
-.img.fit-whole { object-fit: contain; background: #ffffff; }
+/* Photos: the box takes the photo's own shape (set by fitPhoto() when it loads), between 2:3 and 16:10,
+   so photos fill it with little or no cropping and no bars. No-photo / Amazon cards keep 4:5. */
