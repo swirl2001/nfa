@@ -1051,7 +1051,7 @@ function buildNewItemCard() {
     field("niDesc", "Description (optional)", desc),
     el("div", { class: "new-field" }, el("label", { for: "niPrice", text: "Price (optional)" }), el("div", { class: "new-price" }, cur, price)),
     err,
-    el("div", { class: "form-actions" }, save, cancel));
+    el("div", { class: "form-actions" }, cancel, save));
   form.onsubmit = (e) => { e.preventDefault(); saveNewItem(save); };
   // Return saves from any box (Shift+Return = new line in the description); Escape cancels.
   form.addEventListener("keydown", (e) => {
