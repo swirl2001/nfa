@@ -1019,7 +1019,7 @@ function buildNewItemCard() {
   const name = el("input", { id: "niName", type: "text", maxlength: "200", autocomplete: "off" });
   const link = el("input", { id: "niLink", type: "url", maxlength: "2000", placeholder: "https://", autocomplete: "off" });
   const desc = el("textarea", { id: "niDesc", rows: "2", maxlength: "1000" });
-  const price = el("input", { id: "niPrice", type: "text", maxlength: "40", placeholder: "e.g. 24, €30 or priceless", autocomplete: "off" });
+  const price = el("input", { id: "niPrice", type: "text", maxlength: "40", placeholder: "e.g. 24", autocomplete: "off" });
   const cur = el("select", { id: "niCurrency", "aria-label": "Currency" });
   ["USD", "EUR", "GBP", "CAD", "AUD", "JPY", "MXN", "NZD", "CHF", "SEK", "INR"].forEach((c) => {
     let sym = c;
