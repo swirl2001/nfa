@@ -614,7 +614,7 @@ $("#items").addEventListener("drop", (e) => { if (dragged) e.preventDefault(); }
 $("#shareBtn").onclick = async () => {
   const url = friendsUrl();
   const ok = await copyQuiet(url);
-  toast(ok ? "Friends & family link copied." : "Here's your friends & family link.", null, { sticky: true, url });
+  toast(ok ? "Link copied." : "Here's your link.", null, { sticky: true, url });
 };
 $("#listMenuBtn").onclick = (e) => {
   e.stopPropagation();
