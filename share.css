@@ -466,9 +466,9 @@ select:disabled { opacity: .55; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .alt, .alt-scribble, .alt-etsy, .alt-web { transition: none; } }
 
 /* ---- Save / Cancel standard (every form, site + extension; keep both copies the same) ----
-   Right-aligned: [Cancel] [Save]. Save = round pill, card colour (white) with a light grey outline;
+   Left-aligned, main action first: [Save] [Cancel]. Save = round pill, card colour (white) with a light grey outline;
    Cancel = underlined text link. Text boxes are rounded rectangles (8px), never pills. */
-.form-actions { display: flex; justify-content: flex-end; align-items: center; gap: 16px; flex-wrap: wrap; }
+.form-actions { display: flex; justify-content: flex-start; align-items: center; gap: 16px; flex-wrap: wrap; }
 .btn-save {
   display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 7px 18px;
   border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink);
