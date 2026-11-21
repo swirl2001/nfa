@@ -327,7 +327,7 @@ function card(tpl, it, owner) {
   const showPlaceholder = () => { img.hidden = true; noimg.hidden = false; };
   $(".noimg-store", node).textContent = amazon ? "" : (it.store || "");
   const src = imageLink(it);
-  if (src) { img.src = src; img.alt = it.name || ""; img.onerror = showPlaceholder; } else showPlaceholder();
+  if (src) { img.onload = () => fitPhoto(img); img.src = src; img.alt = it.name || ""; img.onerror = showPlaceholder; } else showPlaceholder();
   if (amazon) {
     const alt = $(".alt", node), q = encodeURIComponent(it.name || "");
     alt.hidden = false;
@@ -1146,4 +1146,10 @@ async function saveNewItem(btn) {
   } finally {
     savingNew = false;
   }
+}
+
+// Very wide or very tall photos would lose a lot in a square box: show them whole instead.
+function fitPhoto(img) {
+  const r = img.naturalWidth / img.naturalHeight;
+  img.classList.toggle("fit-whole", !!r && (r > 1.25 || r < 0.8));
 }
