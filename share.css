@@ -201,7 +201,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 /* Rename input */
 #renameInput {
   font: inherit; font-size: 16px; /* 16px stops iOS zooming in */
-  padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); width: 100%;
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); width: 100%;
 }
 #renameInput:focus { outline: none; box-shadow: 0 0 0 2px var(--ink); }
 
@@ -464,3 +464,16 @@ select:disabled { opacity: .55; cursor: default; }
 .card.amazon .ov-btn:focus-visible { outline-color: #ffffff; }
 .card.amazon .t-name, .card.amazon .t-desc { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--muted); cursor: default; }
 @media (prefers-reduced-motion: reduce) { .alt, .alt-scribble, .alt-etsy, .alt-web { transition: none; } }
+
+/* ---- Save / Cancel standard (every form, site + extension; keep both copies the same) ----
+   Right-aligned: [Cancel] [Save]. Save = round pill, card colour (white) with a light grey outline;
+   Cancel = underlined text link. Text boxes are rounded rectangles (8px), never pills. */
+.form-actions { display: flex; justify-content: flex-end; align-items: center; gap: 16px; flex-wrap: wrap; }
+.btn-save {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 7px 18px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.btn-save:hover { border-color: var(--muted); }
+.btn-save:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.btn-save:disabled { opacity: .55; cursor: default; }

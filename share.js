@@ -1041,7 +1041,7 @@ function buildNewItemCard() {
     cur.append(el("option", { value: c, text: sym === c ? c : `${sym} ${c}` }));
   });
   const err = el("p", { class: "new-error", id: "niError", role: "alert", hidden: true });
-  const save = el("button", { type: "submit", class: "text-link", text: "Add to list" });
+  const save = el("button", { type: "submit", class: "btn-save", text: "Add to list" });
   const cancel = el("button", { type: "button", class: "text-link", text: "Cancel" });
   cancel.onclick = closeNewItem;
 
@@ -1051,7 +1051,7 @@ function buildNewItemCard() {
     field("niDesc", "Description (optional)", desc),
     el("div", { class: "new-field" }, el("label", { for: "niPrice", text: "Price (optional)" }), el("div", { class: "new-price" }, cur, price)),
     err,
-    el("div", { class: "new-actions" }, save, cancel));
+    el("div", { class: "form-actions" }, cancel, save));
   form.onsubmit = (e) => { e.preventDefault(); saveNewItem(save); };
   // Return saves from any box (Shift+Return = new line in the description); Escape cancels.
   form.addEventListener("keydown", (e) => {
