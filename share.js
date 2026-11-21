@@ -281,11 +281,11 @@ function renderHeader(owner) {
   document.title = `${listTitle} · NFA Wishlist`;
   $("#title").textContent = listTitle;
   $("#explainer").textContent = signedInOwner
-    ? "This is your list. Edit it here, and use the share button to copy the link for friends. What's been bought stays hidden from you."
+    ? "This is your list. Edit it here, and use the share button to copy the link for friends and family. What's been bought stays hidden from you."
     : isEdit
-    ? "This is your private edit link. Don't share it. Use the share button to send friends their own link. What's been bought stays hidden from you."
+    ? "This is your private edit link. Don't share it. Use the share button to send friends and family their own link. What's been bought stays hidden from you."
     : owner
-      ? "Don't spoil the surprise! This is your list, so what friends buy stays hidden from you."
+      ? "Don't spoil the surprise! This is your list, so what friends and family buy stays hidden from you."
       : "Tap “Mark as purchased” when you get something, so nobody doubles up. The list owner never sees what's been bought.";
   $("#shareBtn").hidden = !isEdit;
   $("#listMenuBtn").hidden = !isEdit;
@@ -413,7 +413,7 @@ function wireOwned(node, it) {
       it.owned = value;
       show();
       if (value) {
-        toast("Marked as yours. Friends will see it's taken.", () => setOwned(false));
+        toast("Marked as yours. Friends and family will see it's taken.", () => setOwned(false));
       } else {
         toast("No longer marked as yours.");
       }
