@@ -376,7 +376,7 @@ function card(tpl, it, owner) {
   $(".t-name", node).textContent = it.name || "Untitled item";
   $(".t-name", node).title = it.name || "";
   $(".t-desc", node).textContent = it.description || "";
-  $(".t-price", node).textContent = money(it.price, it.currency);
+  $(".t-price", node).textContent = nfaPriceText(it.price, it.currency, it.price_label);
 
   if (isEdit) {
     const del = $(".del", node);
@@ -495,7 +495,7 @@ function makeEditable(el, it, cardNode) {
   const start = () => {
     if (el.isContentEditable) return;
     before = el.textContent;
-    if (field === "price") el.textContent = it.price == null ? "" : String(it.price);
+    if (field === "price") el.textContent = nfaPriceText(it.price, it.currency, it.price_label);
     el.contentEditable = "plaintext-only";
     el.classList.add("editing");
     cardNode.draggable = false;
@@ -512,10 +512,29 @@ function makeEditable(el, it, cardNode) {
     if (!save) { el.textContent = before; return; }
     let value = text;
     if (field === "price") {
-      value = text === "" ? null : parseMoney(text);
-      if (value === undefined) { el.textContent = before; toast("Type a price like 24.99"); return; }
-      el.textContent = money(value, it.currency);
-      if (value === (it.price == null ? null : Number(it.price))) return;
+      // A number (with or without a currency) or any text, like "priceless". Bare number: this item's currency, else $.
+      const p = nfaParsePrice(text, it.currency);
+      el.textContent = nfaPriceText(p.price, p.currency, p.label);
+      const same = p.price === (it.price == null ? null : Number(it.price)) && (p.currency || null) === (it.currency || null) && (p.label || null) === (it.price_label || null);
+      if (same) return;
+      const old = { price: it.price ?? null, currency: it.currency ?? null, price_label: it.price_label ?? null };
+      Object.assign(it, { price: p.price, currency: p.currency, price_label: p.label });
+      const patch = { price: p.price, currency: p.currency, price_label: p.label };
+      try {
+        await ownerRpc("owner_update_item", { p_item_id: it.id, p_patch: patch });
+        if (!text && (old.price != null || old.price_label)) {
+          toast("Price removed", async () => {
+            Object.assign(it, old);
+            try { await ownerRpc("owner_update_item", { p_item_id: it.id, p_patch: old }); render(true); }
+            catch (e) { toast("Couldn't undo. Try again."); }
+          });
+        }
+      } catch (e) {
+        Object.assign(it, old);
+        el.textContent = before;
+        toast("Couldn't save that change.");
+      }
+      return;
     } else {
       if (field === "name" && !text) { el.textContent = before; return; }
       el.textContent = text;
@@ -626,7 +645,7 @@ const sortedItems = () => (isEdit ? [...items].sort(byPosition) : items);
 function copyList() {
   const lines = [listTitle, ""];
   sortedItems().forEach((it, n) => {
-    const price = money(it.price, it.currency);
+    const price = nfaPriceText(it.price, it.currency, it.price_label);
     lines.push(`${n + 1}. ${it.name}${price ? " — " + price : ""}`);
     if (it.description) lines.push(`   ${it.description}`);
     const link = shopLink(it);
@@ -638,7 +657,7 @@ function copyList() {
 function downloadList() {
   const cell = (v) => { let s = v == null ? "" : String(v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
   const rows = [["Name", "Description", "Price", "Currency", "Store", "Link"]];
-  sortedItems().forEach((it) => rows.push([it.name, it.description || "", it.price ?? "", it.currency || "", it.amazon_blocked ? "" : it.store || "", shopLink(it)]));
+  sortedItems().forEach((it) => rows.push([it.name, it.description || "", it.price_label || (it.price ?? ""), it.price_label ? "" : it.currency || "", it.amazon_blocked ? "" : it.store || "", shopLink(it)]));
   const csv = "﻿" + rows.map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const a = document.createElement("a");
@@ -822,8 +841,11 @@ function renderDetails() {
   const ownerData = "note_visibility" in d;
   const note = (d.note || "").trim();
   const noteShown = note && !(ownerData && d.note_visibility === "hidden");
-  const addr = (d.address || "").trim();
+  const recipient = (d.recipient_name || "").trim(), street = (d.address || "").trim();
+  const dnotes = (d.delivery_notes || "").trim();
+  const addr = [recipient, street].filter(Boolean).join("\n");
   const addrShown = addr && !(ownerData && d.address_visibility === "hidden");
+  const copyAll = [addr, dnotes && `Delivery notes: ${dnotes}`].filter(Boolean).join("\n");
   const locked = !addrShown && d.address_locked === true;
 
   $("#noteText").textContent = noteShown ? note : "";
@@ -834,13 +856,14 @@ function renderDetails() {
   if (!ship.hidden) {
     setIcon($("#shipIcon"), locked ? LOCK : PIN);
     $("#shipCopy").hidden = !addrShown;
-    $("#shipCopy").onclick = () => copyText(addr, "Address copied.");
+    $("#shipCopy").onclick = () => copyText(copyAll, "Address copied.");
     const body = $("#shipBody");
     body.textContent = "";
     if (addrShown) {
       const a = document.createElement("address");
       a.textContent = addr;
       body.appendChild(a);
+      if (dnotes) { const p = document.createElement("p"); p.className = "ship-line ship-muted"; p.textContent = `Delivery notes: ${dnotes}`; body.appendChild(p); }
     } else {
       const p = document.createElement("p");
       p.className = "ship-muted";
@@ -878,11 +901,13 @@ function openDetails() {
   const d = details || {};
   $("#noteInput").value = d.note || "";
   radio("noteVis", d.note_visibility || "public");
+  $("#recipientInput").value = d.recipient_name || "";
   $("#addrInput").value = d.address || "";
+  $("#deliveryInput").value = d.delivery_notes || "";
   radio("addrVis", d.address_visibility || "signed_in");
   const lbl = $("#addrToggleLabel");
   lbl.textContent = "";
-  if (d.address) lbl.append("Shipping address");
+  if (d.address || d.recipient_name) lbl.append("Shipping address");
   else { lbl.append("Add shipping address "); const o = document.createElement("span"); o.className = "opt"; o.textContent = "(optional)"; lbl.append(o); }
   setAddrOpen(false); // closed until the owner opens it
   $("#detailsForm").hidden = false;
@@ -894,7 +919,7 @@ function closeDetails() {
   renderDetails();
   $("#listMenuBtn").focus();
 }
-$("#addrToggle").onclick = () => { setAddrOpen($("#addrPanel").hidden); if (!$("#addrPanel").hidden) $("#addrInput").focus(); };
+$("#addrToggle").onclick = () => { setAddrOpen($("#addrPanel").hidden); if (!$("#addrPanel").hidden) $("#recipientInput").focus(); };
 $("#detailsCancel").onclick = closeDetails;
 let savingDetails = false;
 $("#detailsForm").onsubmit = async (e) => {
@@ -903,15 +928,20 @@ $("#detailsForm").onsubmit = async (e) => {
   savingDetails = true;
   const next = {
     note: $("#noteInput").value.trim().slice(0, 500), note_visibility: radioValue("noteVis") || "public",
-    address: $("#addrInput").value.trim().slice(0, 400), address_visibility: radioValue("addrVis") || "signed_in",
+    recipient_name: $("#recipientInput").value.replace(/\s+/g, " ").trim().slice(0, 100),
+    address: $("#addrInput").value.trim().slice(0, 400),
+    delivery_notes: $("#deliveryInput").value.replace(/\s+/g, " ").trim().slice(0, 300),
+    address_visibility: radioValue("addrVis") || "signed_in",
   };
   try {
     const ok = await ownerRpc("owner_set_details", {
       p_note: next.note, p_note_visibility: next.note_visibility,
-      p_address: next.address, p_address_visibility: next.address_visibility,
+      p_recipient_name: next.recipient_name, p_address: next.address,
+      p_delivery_notes: next.delivery_notes, p_address_visibility: next.address_visibility,
     });
     if (!ok) throw new Error("not saved");
-    details = { ...next, note: next.note || null, address: next.address || null };
+    details = { ...next, note: next.note || null, address: next.address || null, recipient_name: next.recipient_name || null,
+      delivery_notes: next.delivery_notes || null };
     closeDetails();
     toast("Saved.");
   } catch (e) {
@@ -989,7 +1019,13 @@ function buildNewItemCard() {
   const name = el("input", { id: "niName", type: "text", maxlength: "200", autocomplete: "off" });
   const link = el("input", { id: "niLink", type: "url", maxlength: "2000", placeholder: "https://", autocomplete: "off" });
   const desc = el("textarea", { id: "niDesc", rows: "2", maxlength: "1000" });
-  const price = el("input", { id: "niPrice", type: "text", inputmode: "decimal", maxlength: "20", placeholder: "$0.00", autocomplete: "off" });
+  const price = el("input", { id: "niPrice", type: "text", maxlength: "40", placeholder: "e.g. 24, €30 or priceless", autocomplete: "off" });
+  const cur = el("select", { id: "niCurrency", "aria-label": "Currency" });
+  ["USD", "EUR", "GBP", "CAD", "AUD", "JPY", "MXN", "NZD", "CHF", "SEK", "INR"].forEach((c) => {
+    let sym = c;
+    try { sym = new Intl.NumberFormat("en", { style: "currency", currency: c, currencyDisplay: "narrowSymbol" }).formatToParts(0).find((x) => x.type === "currency").value; } catch (e) {}
+    cur.append(el("option", { value: c, text: sym === c ? c : `${sym} ${c}` }));
+  });
   const err = el("p", { class: "new-error", id: "niError", role: "alert", hidden: true });
   const save = el("button", { type: "submit", class: "text-link", text: "Add to list" });
   const cancel = el("button", { type: "button", class: "text-link", text: "Cancel" });
@@ -999,7 +1035,7 @@ function buildNewItemCard() {
     field("niName", "Name", name),
     field("niLink", "Link (optional)", link),
     field("niDesc", "Description (optional)", desc),
-    field("niPrice", "Price (optional)", price),
+    el("div", { class: "new-field" }, el("label", { for: "niPrice", text: "Price (optional)" }), el("div", { class: "new-price" }, cur, price)),
     err,
     el("div", { class: "new-actions" }, save, cancel));
   form.onsubmit = (e) => { e.preventDefault(); saveNewItem(save); };
@@ -1063,12 +1099,8 @@ async function saveNewItem(btn) {
     if (!isWebLink(url)) return newItemError("That link doesn't look right. Check it, or leave it empty.", "niLink");
     if (nfaIsAmazon(url)) return newItemError("NFA doesn't link to Amazon. Add a link to another shop, or leave it empty.", "niLink");
   }
-  let price = null;
-  if (priceText) {
-    const p = parseMoney(priceText);
-    if (p === undefined) return newItemError("Enter a price like 24 or 24.50, or leave it empty.", "niPrice");
-    price = p;
-  }
+  // Typed symbol/code wins ("€30"); a bare number uses the picker; anything else is kept as text ("priceless").
+  const pp = nfaParsePrice(priceText, $("#niCurrency").value);
   savingNew = true;
   btn.disabled = true; btn.textContent = newItemPhoto ? "Uploading photo…" : "Adding…";
   try {
@@ -1077,7 +1109,7 @@ async function saveNewItem(btn) {
     const store = url ? new URL(url).hostname.replace(/^www\./, "") : null;
     const item = {
       id: crypto.randomUUID(), name, description: description || null, url: url || null, store,
-      image, price, saved_price: price, currency: price == null ? null : "USD",
+      image, price: pp.price, saved_price: pp.price, currency: pp.price == null ? null : pp.currency, price_label: pp.label,
       position: top - 1, saved_at: new Date().toISOString(), amazon_blocked: false, owned: false,
     };
     const ok = await ownerRpc("owner_restore_item", { p_item: item });

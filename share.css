@@ -407,3 +407,24 @@ input#niPhoto:focus-visible + .new-photo { outline: 2px solid var(--ink); outlin
 .noimg { background: var(--noimg-bg); }
 .noimg-mark { width: 24%; min-width: 30px; max-width: 56px; height: auto; display: block; }
 .noimg-store { font-weight: 600; color: var(--muted); }
+
+.new-price { display: flex; gap: 6px; }
+.new-price select {
+  flex: none; font: inherit; font-size: 14px; color: var(--ink); background: var(--card);
+  border: 1px solid var(--line); border-radius: 8px; padding: 7px 6px;
+}
+.new-price select:focus { outline: none; box-shadow: 0 0 0 2px var(--ink); border-color: transparent; }
+.new-price input { flex: 1; min-width: 0; }
+
+/* Gift delivery: phone + notes under the address */
+.ship-line { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.addr-panel .new-field input, .addr-panel .new-field textarea { font-size: 15px; }
+.new-field label .opt { font-weight: 400; }
+
+/* Phones: the tagline moves to its own line under the logo instead of being cut off */
+@media (max-width: 560px) {
+  .brand { flex-wrap: wrap; row-gap: 2px; }
+  .tagline { flex-basis: 100%; margin-left: 36px; white-space: normal; overflow: visible; font-size: 11px; }
+}
+/* Toasts size to their text (up to the screen width) instead of being squeezed from the middle */
+.toast { width: max-content; }

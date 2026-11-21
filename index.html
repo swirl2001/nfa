@@ -106,8 +106,18 @@
             <svg class="chev" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
           </button>
           <div id="addrPanel" class="addr-panel" hidden>
-            <label for="addrInput" class="sr-only">Shipping address</label>
-            <textarea id="addrInput" rows="4" maxlength="400" placeholder="Name&#10;Street, apartment&#10;City, state, ZIP"></textarea>
+            <div class="new-field">
+              <label for="recipientInput">Recipient name</label>
+              <input id="recipientInput" type="text" maxlength="100" autocomplete="name" placeholder="First and last name" />
+            </div>
+            <div class="new-field">
+              <label for="addrInput">Address</label>
+              <textarea id="addrInput" rows="3" maxlength="400" autocomplete="street-address" placeholder="Street, apartment&#10;City, state, ZIP"></textarea>
+            </div>
+            <div class="new-field">
+              <label for="deliveryInput">Delivery notes <span class="opt">(optional)</span></label>
+              <input id="deliveryInput" type="text" maxlength="300" placeholder="e.g. Gate code 4821" />
+            </div>
             <fieldset class="vis">
               <legend class="sr-only">Who can see the address</legend>
               <label><input type="radio" name="addrVis" value="public" /> Anyone with the link</label>
@@ -216,6 +226,7 @@
 
   <script src="config.js"></script>
   <script src="amazon.js"></script>
+  <script src="price.js"></script>
   <script src="auth.js"></script>
   <script src="share.js"></script>
 </body>
