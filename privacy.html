@@ -34,14 +34,23 @@
     <ul>
       <li><b>The items you save:</b> the product's name, description, price and currency, whether it's in stock, the store's name, the product page address, and the address of its photo. The extension reads these from the page only when you choose “Save to NFA Wishlist” (or tap the save button). Anything you type, like a new name, description or price, is saved too.</li>
       <li><b>Your list:</b> its name, the order of your items, and whether you marked something “I own this”.</li>
+      <li><b>A note and shipping address, if you add them</b> (both optional), and who you chose to show each one to: anyone with your link, anyone who signs in with Google, or nobody. We only send them to the people you chose. Clearing them deletes them.</li>
       <li><b>An anonymous account ID:</b> the first time you save, we create an account for you with no name, email or password. It's a random ID that lets your list sync and keeps others from changing it.</li>
       <li><b>Link codes:</b> when you share, we create a random code for your list's link, and a separate private code for your own edit link.</li>
+    </ul>
+
+    <h3>If you sign in with Google (optional)</h3>
+    <ul>
+      <li>Signing in is never required. If you choose “Sign in with Google” in the extension or on the website, Google tells us your <b>email address, name and profile photo address</b>, and we link them to your account so you can open your list on other computers and edit it on the website. We don't get your Google password or access to anything else in your Google account.</li>
+      <li>On the website, your sign-in is kept in your browser's localStorage (not a cookie) until you sign out.</li>
+      <li>If you've used NFA with the same Google account on another computer, we offer to copy this browser's items into that list. Your earlier list stays as it was.</li>
     </ul>
     <p>We don't read your browsing history, and the extension can't see any page unless you ask it to save from that page. See “Extension permissions” below.</p>
 
     <h3>When friends view your list (website)</h3>
     <ul>
       <li><b>Purchase marks:</b> when a friend taps “Mark as purchased”, we store that the item was marked, with no name. Their browser keeps a private code so only that browser can undo it.</li>
+      <li>Friends don't need to sign in. If a friend chooses to sign in with Google, we receive the same details described above.</li>
       <li><b>Small notes in the friend's own browser</b> (localStorage, not cookies): which items they marked, the last store page they opened from the list (so we can ask “Did you buy it?” when they come back; forgotten after 3 days), and which lists' edit links were opened in that browser (so list owners don't see purchases).</li>
     </ul>
     <p><b>The list owner never sees</b> what's been marked as purchased, or by whom.</p>
@@ -57,7 +66,8 @@
 
     <h2>Who else handles it</h2>
     <ul>
-      <li><b>Supabase</b> stores lists, items and purchase marks (servers in the United States).</li>
+      <li><b>Supabase</b> stores lists, items, purchase marks and Google sign-in details (servers in the United States).</li>
+      <li><b>Google</b> handles “Sign in with Google”, under Google's own privacy policy.</li>
       <li><b>Cloudflare</b> hosts the website nfawishlist.com.</li>
       <li><b>GitHub</b> hosts an older copy of the website (swirl2001.github.io/nfa) during our move to nfawishlist.com.</li>
       <li><b>Online shops:</b> list pages show product photos loaded straight from the shop's website, so that shop can see a request from your browser. We tell browsers not to send which page you came from. When you open a product, you go to the shop's own site, under its own privacy policy.</li>
@@ -72,6 +82,7 @@
       <li><b>Active tab and scripting:</b> reads the product details from the page you're on, only at the moment you choose to save.</li>
       <li><b>Storage:</b> keeps a copy of your list on your computer so it opens instantly.</li>
       <li><b>Side panel:</b> shows your list beside the page.</li>
+      <li><b>Identity:</b> opens Google's sign-in window, only when you choose “Sign in with Google”.</li>
       <li><b>Access to all sites (optional, off by default):</b> only if you turn on the floating save button. It lets the button appear on product pages. Turning the button off removes this access.</li>
     </ul>
 
@@ -81,7 +92,8 @@
     <h2>How long we keep it, and deleting it</h2>
     <ul>
       <li>We keep your list until you delete it. Deleting an item removes it from our servers.</li>
-      <li>To delete your whole list and anonymous account, email us (below) with your list's link and we'll delete everything within 30 days. Uninstalling the extension removes the copy on your computer, but not the list on our servers.</li>
+      <li>Signing out removes your sign-in from that browser or the extension. Your list stays in your account.</li>
+      <li>To delete your whole list and account (including Google sign-in details), email us (below) with your list's link and we'll delete everything within 30 days. Uninstalling the extension removes the copy on your computer, but not the list on our servers.</li>
       <li>Friends can clear their purchase codes and notes by clearing site data for nfawishlist.com in their browser.</li>
     </ul>
 

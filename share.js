@@ -12,22 +12,31 @@
 
 if (location.hostname === "www.nfawishlist.com") location.replace("https://nfawishlist.com" + location.pathname + location.search);
 const $ = (s, el = document) => el.querySelector(s);
-const params = new URLSearchParams(location.search);
-const slug = (params.get("list") || "").trim();
-const editToken = (params.get("edit") || "").trim();
-const isEdit = /^[0-9a-f]{32,128}$/i.test(editToken);
-const viewOnlyOwner = params.get("view") === "me";
+// Read from the address bar in readParams() (again after a Google sign-in returns here).
+let params, slug, editToken, isEdit, viewOnlyOwner;
+let signedInOwner = false; // signed in with Google and this is their list: edit mode, token kept in memory only
+function readParams() {
+  params = new URLSearchParams(location.search);
+  slug = (params.get("list") || "").trim();
+  editToken = (params.get("edit") || "").trim();
+  isEdit = /^[0-9a-f]{32,128}$/i.test(editToken);
+  viewOnlyOwner = params.get("view") === "me";
+}
+readParams();
 let items = [];          // current items (owner: with position)
 let listTitle = "";
 
 // ---------- server ----------
 
-async function rpc(fn, args) {
+async function rpc(fn, args, anon = false) {
+  const headers = { apikey: NFA_CONFIG.supabaseKey, "Content-Type": "application/json" };
+  const tok = anon ? null : await NFAAuth.token(); // signed in with Google: the server knows who's asking
+  if (tok) headers.Authorization = `Bearer ${tok}`;
   const res = await fetch(`${NFA_CONFIG.supabaseUrl}/rest/v1/rpc/${fn}`, {
-    method: "POST",
-    headers: { apikey: NFA_CONFIG.supabaseKey, "Content-Type": "application/json" },
-    body: JSON.stringify(args),
+    method: "POST", headers, body: JSON.stringify(args),
   });
+  // A sign-in the server no longer accepts must never block the list: forget it and ask again as a guest.
+  if (res.status === 401 && tok) { NFAAuth.forget(); renderAccount(); return rpc(fn, args, true); }
   const data = await res.json().catch(() => null);
   if (!res.ok) throw new Error((data && data.message) || `HTTP ${res.status}`);
   return data;
@@ -57,31 +66,49 @@ function parseMoney(text) {
 
 // ---------- toast ----------
 
-function toast(msg, onUndo = null) {
+// opts.sticky: stays until closed (no timer). opts.url: shown under the message, selectable, with a copy button.
+function toast(msg, onUndo = null, opts = {}) {
   const t = $("#toast");
   $(".toast-msg", t).textContent = msg;
   const undo = $(".toast-undo", t);
   undo.hidden = !onUndo;
   undo.onclick = () => { hideToast(); onUndo(); };
   t.hidden = false;
+  const url = $(".toast-url", t), cp = $(".toast-copy", t);
+  url.textContent = (opts.url || "").replace(/^https?:\/\//, ""); // shorter to read; the copy button copies the full link
+  url.hidden = cp.hidden = !opts.url;
+  cp.onclick = async () => { const ok = await copyQuiet(opts.url); $(".toast-msg", t).textContent = ok ? "Link copied." : "Couldn't copy. Select the link and copy it."; };
+  t.classList.toggle("has-url", !!opts.url);
+  toast.sticky = !!opts.sticky;
   toast.ms = onUndo ? 6000 : 3500;
   clearTimeout(toast.t);
-  toast.t = setTimeout(hideToast, toast.ms);
+  if (!toast.sticky) toast.t = setTimeout(hideToast, toast.ms);
 }
 // Keep the message (and its Undo) up while the pointer or keyboard focus is on it.
 {
   const t = $("#toast");
   const hold = () => clearTimeout(toast.t);
-  const resume = () => { if (!t.hidden && !t.matches(":hover") && !t.contains(document.activeElement)) { clearTimeout(toast.t); toast.t = setTimeout(hideToast, toast.ms || 3500); } };
+  const resume = () => { if (!toast.sticky && !t.hidden && !t.matches(":hover") && !t.contains(document.activeElement)) { clearTimeout(toast.t); toast.t = setTimeout(hideToast, toast.ms || 3500); } };
   t.addEventListener("mouseenter", hold); t.addEventListener("focusin", hold);
   t.addEventListener("mouseleave", resume); t.addEventListener("focusout", () => setTimeout(resume, 0));
 }
 // Screen-reader-only announcement (things that appear without moving focus).
 function announce(msg) { const r = $("#sr"); r.textContent = ""; setTimeout(() => { r.textContent = msg; }, 50); }
 const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-function hideToast() { $("#toast").hidden = true; clearTimeout(toast.t); }
+function hideToast() { $("#toast").hidden = true; toast.sticky = false; clearTimeout(toast.t); }
 $("#toast .toast-close").onclick = hideToast;
 
+// Copy without a message; true if it worked.
+async function copyQuiet(text) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;left:-9999px;top:0";
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand("copy"); ta.remove();
+    return ok;
+  }
+}
 async function copyText(text, okMsg) {
   try { await navigator.clipboard.writeText(text); toast(okMsg); return true; }
   catch (e) {
@@ -104,6 +131,7 @@ function openMenu(anchor, entries, cardNode = null) {
   closeMenu();
   menu.textContent = "";
   entries.filter(Boolean).forEach((en) => {
+    if (en.info) { const d = document.createElement("div"); d.className = "menu-info"; d.textContent = en.info; menu.appendChild(d); return; }
     const b = document.createElement("button");
     b.type = "button"; b.className = "menu-item"; b.setAttribute("role", "menuitem");
     const icon = $("#menuIcons").content.querySelector(`[data-icon="${en.icon}"] svg`);
@@ -157,7 +185,17 @@ window.addEventListener("scroll", () => {
 function setState(msg) { const s = $("#state"); s.textContent = msg || ""; s.hidden = !msg; }
 
 async function load() {
+  const authMsg = await NFAAuth.finishRedirect(); // back from Google's sign-in page?
+  readParams();
+  renderAccount();
+  if (authMsg) toast(authMsg);
   if (!slug) { showLanding(); return; } // nfawishlist.com with no list code → home page
+  // Signed in and it's your list: edit it here (same as the private edit link, but the token
+  // stays in memory, so the address bar keeps showing the friends link).
+  if (!isEdit && NFAAuth.user() && /^[A-Za-z0-9_-]{6,64}$/.test(slug)) {
+    const mine = await rpc("my_edit_link", { p_slug: slug }).catch(() => null);
+    if (mine && mine.token) { editToken = mine.token; isEdit = true; signedInOwner = true; }
+  }
   if (!/^[A-Za-z0-9_-]{6,64}$/.test(slug)) { setState("This link is missing its list code. Ask for the link again."); return; }
   let data, ownsHere = false;
   try {
@@ -180,6 +218,7 @@ async function load() {
   renderHeader(owner);
   items = Array.isArray(data.items) ? data.items : [];
   render(owner);
+  loadDetails(); // note + shipping address (each optional)
   maybeAsk();
 }
 
@@ -188,12 +227,61 @@ function showLanding() {
   document.body.classList.add("home");
   document.title = "NFA Wishlist · Shop small, shop local";
   $("#landing").hidden = false;
+  showMyListLink();
+}
+
+// Home page, signed in: link to your own list.
+async function showMyListLink() {
+  const box = $("#myList");
+  if (!NFAAuth.user()) { box.hidden = true; return; }
+  const mine = await rpc("my_list_link", {}).catch(() => null);
+  box.textContent = "";
+  if (mine && mine.slug) {
+    const a = document.createElement("a");
+    a.className = "text-link";
+    a.href = `${location.pathname}?list=${encodeURIComponent(mine.slug)}`;
+    a.textContent = "Open your list";
+    box.append(a);
+  } else {
+    box.textContent = "No list yet. Save something with the NFA Wishlist extension, then choose Sign in with Google in its ⋯ menu.";
+  }
+  box.hidden = false;
+}
+
+// ---------- account (optional Google sign-in) ----------
+// Signed out: a quiet "Sign in" text link. Signed in: a round initial that opens Email / Sign out.
+function renderAccount() {
+  const box = $("#account");
+  box.textContent = "";
+  const u = NFAAuth.user();
+  if (!u) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "text-link"; b.textContent = "Sign in";
+    b.onclick = () => NFAAuth.signIn();
+    box.append(b);
+    return;
+  }
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "avatar-btn"; b.setAttribute("aria-haspopup", "menu");
+  b.setAttribute("aria-label", `Account: ${u.email || "signed in"}`);
+  b.title = u.email || "Signed in";
+  b.textContent = ((u.name || u.email || "?").trim()[0] || "?").toUpperCase();
+  b.onclick = (e) => {
+    e.stopPropagation();
+    openMenu(b, [
+      { info: u.email ? `Signed in as ${u.email}` : "Signed in with Google" },
+      { icon: "signout", label: "Sign out", run: async () => { await NFAAuth.signOut(); location.reload(); } },
+    ]);
+  };
+  box.append(b);
 }
 
 function renderHeader(owner) {
   document.title = `${listTitle} · NFA Wishlist`;
   $("#title").textContent = listTitle;
-  $("#explainer").textContent = isEdit
+  $("#explainer").textContent = signedInOwner
+    ? "This is your list. Edit it here, and use the share button to copy the link for friends. What's been bought stays hidden from you."
+    : isEdit
     ? "This is your private edit link. Don't share it. Use the share button to send friends their own link. What's been bought stays hidden from you."
     : owner
       ? "Don't spoil the surprise! This is your list, so what friends buy stays hidden from you."
@@ -273,12 +361,12 @@ function card(tpl, it, owner) {
     const inTop = node.parentElement === $("#items");
     const isFirst = !node.previousElementSibling, isLast = !node.nextElementSibling;
     openMenu(more, [
+      isEdit && { icon: "edit", label: "Edit details", run: () => $(".t-name", node).click() },
       link && { icon: "open", label: "Open in new tab", run: () => visitStore(it, link, owner) },
       link && { icon: "copy", label: "Copy link", run: () => copyText(link, "Link copied.") },
       isEdit && inTop && !isFirst && { icon: "top", label: "Move to top", run: () => moveToTop(it) },
       isEdit && inTop && !isFirst && { icon: "up", label: "Move up", run: () => moveBy(it, node, -1) },
       isEdit && inTop && !isLast && { icon: "down", label: "Move down", run: () => moveBy(it, node, 1) },
-      isEdit && { icon: "edit", label: "Edit details", run: () => $(".t-name", node).click() },
     ], node);
   };
   if (!link && !isEdit) more.remove();
@@ -500,11 +588,17 @@ $("#items").addEventListener("drop", (e) => { if (dragged) e.preventDefault(); }
 
 // ---------- owner header: share + ⋯ (Rename, Copy list, Download list) ----------
 
-$("#shareBtn").onclick = () => copyText(friendsUrl(), "Friends & family link copied.");
+// Share: copy the friends link and keep it on screen (until closed) to copy again or select by hand.
+$("#shareBtn").onclick = async () => {
+  const url = friendsUrl();
+  const ok = await copyQuiet(url);
+  toast(ok ? "Friends & family link copied." : "Here's your friends & family link.", null, { sticky: true, url });
+};
 $("#listMenuBtn").onclick = (e) => {
   e.stopPropagation();
   openMenu($("#listMenuBtn"), [
     { icon: "edit", label: "Rename", run: openRename },
+    { icon: "note", label: "Add note / address", run: openDetails },
     { icon: "copy", label: "Copy list", hint: "(text)", run: copyList },
     { icon: "download", label: "Download list", hint: "(CSV)", run: downloadList },
   ]);
@@ -683,3 +777,128 @@ async function isMyList(s) {
 }
 
 load();
+
+
+// ---------- note + shipping address (migration 007) ----------
+// Both optional. The server decides what each viewer may see (list_details); the owner reads and
+// saves everything with the edit token (owner_details / owner_set_details). Plain text only.
+let details = null; // owner: {note, note_visibility, address, address_visibility}; friends: {note, address, address_locked}
+const SHIP_OPEN = "nfa-open-ship"; // sessionStorage: reopen the address after signing in to see it
+const PIN = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
+const LOCK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+function setIcon(el, svgText) { // our own constant SVG, parsed as SVG (no page data involved)
+  el.textContent = "";
+  el.appendChild(new DOMParser().parseFromString(svgText, "image/svg+xml").documentElement);
+}
+
+async function loadDetails() {
+  try { details = isEdit ? await ownerRpc("owner_details", {}) : await rpc("list_details", { p_slug: slug }); }
+  catch (e) { details = null; } // not set up on the server yet: simply no note or address
+  renderDetails();
+}
+
+// What shows under the title. The owner sees what friends could see (not "Don't show it" ones).
+function renderDetails() {
+  const d = details || {};
+  const editing = !$("#detailsForm").hidden;
+  const ownerData = "note_visibility" in d;
+  const note = (d.note || "").trim();
+  const noteShown = note && !(ownerData && d.note_visibility === "hidden");
+  const addr = (d.address || "").trim();
+  const addrShown = addr && !(ownerData && d.address_visibility === "hidden");
+  const locked = !addrShown && d.address_locked === true;
+
+  $("#noteText").textContent = noteShown ? note : "";
+  $("#noteText").hidden = editing || !noteShown;
+
+  const ship = $("#ship");
+  ship.hidden = editing || !(addrShown || locked);
+  if (!ship.hidden) {
+    setIcon($("#shipIcon"), locked ? LOCK : PIN);
+    $("#shipCopy").hidden = !addrShown;
+    $("#shipCopy").onclick = () => copyText(addr, "Address copied.");
+    const body = $("#shipBody");
+    body.textContent = "";
+    if (addrShown) {
+      const a = document.createElement("address");
+      a.textContent = addr;
+      body.appendChild(a);
+    } else {
+      const p = document.createElement("p");
+      p.className = "ship-muted";
+      p.textContent = "This address is shared with anyone who signs in.";
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "text-link"; b.textContent = "Sign in with Google to see it";
+      b.onclick = () => { try { sessionStorage.setItem(SHIP_OPEN, "1"); } catch (e) {} NFAAuth.signIn(); };
+      body.append(p, b);
+    }
+    let reopen = false;
+    try { reopen = sessionStorage.getItem(SHIP_OPEN) === "1" && addrShown; if (reopen) sessionStorage.removeItem(SHIP_OPEN); } catch (e) {}
+    setShipOpen(reopen || isShipOpen()); // closed by default; stays as the viewer left it
+  }
+  $("#details").hidden = $("#noteText").hidden && ship.hidden && !editing;
+}
+const isShipOpen = () => $("#shipToggle").getAttribute("aria-expanded") === "true";
+function setShipOpen(open) {
+  $("#shipBody").hidden = !open;
+  ["#shipToggle", "#shipChev"].forEach((s) => $(s).setAttribute("aria-expanded", String(open)));
+  $("#shipChev").classList.toggle("open", open);
+  $("#shipChev").setAttribute("aria-label", open ? "Hide shipping address" : "Show shipping address");
+}
+$("#shipToggle").onclick = () => setShipOpen(!isShipOpen());
+$("#shipChev").onclick = () => setShipOpen(!isShipOpen());
+
+// Owner: ⋯ → Add note / address
+const radio = (name, value) => { const r = document.querySelector(`input[name="${name}"][value="${value}"]`); if (r) r.checked = true; };
+const radioValue = (name) => (document.querySelector(`input[name="${name}"]:checked`) || {}).value;
+function setAddrOpen(open) {
+  $("#addrPanel").hidden = !open;
+  $("#addrToggle").setAttribute("aria-expanded", String(open));
+  $("#addrToggle").classList.toggle("open", open);
+}
+function openDetails() {
+  const d = details || {};
+  $("#noteInput").value = d.note || "";
+  radio("noteVis", d.note_visibility || "public");
+  $("#addrInput").value = d.address || "";
+  radio("addrVis", d.address_visibility || "signed_in");
+  const lbl = $("#addrToggleLabel");
+  lbl.textContent = "";
+  if (d.address) lbl.append("Shipping address");
+  else { lbl.append("Add shipping address "); const o = document.createElement("span"); o.className = "opt"; o.textContent = "(optional)"; lbl.append(o); }
+  setAddrOpen(false); // closed until the owner opens it
+  $("#detailsForm").hidden = false;
+  renderDetails();
+  $("#noteInput").focus();
+}
+function closeDetails() {
+  $("#detailsForm").hidden = true;
+  renderDetails();
+  $("#listMenuBtn").focus();
+}
+$("#addrToggle").onclick = () => { setAddrOpen($("#addrPanel").hidden); if (!$("#addrPanel").hidden) $("#addrInput").focus(); };
+$("#detailsCancel").onclick = closeDetails;
+let savingDetails = false;
+$("#detailsForm").onsubmit = async (e) => {
+  e.preventDefault();
+  if (savingDetails) return;
+  savingDetails = true;
+  const next = {
+    note: $("#noteInput").value.trim().slice(0, 500), note_visibility: radioValue("noteVis") || "public",
+    address: $("#addrInput").value.trim().slice(0, 400), address_visibility: radioValue("addrVis") || "signed_in",
+  };
+  try {
+    const ok = await ownerRpc("owner_set_details", {
+      p_note: next.note, p_note_visibility: next.note_visibility,
+      p_address: next.address, p_address_visibility: next.address_visibility,
+    });
+    if (!ok) throw new Error("not saved");
+    details = { ...next, note: next.note || null, address: next.address || null };
+    closeDetails();
+    toast("Saved.");
+  } catch (e) {
+    toast("Couldn't save. Check your connection and try again.");
+  } finally {
+    savingDetails = false;
+  }
+};

@@ -22,6 +22,8 @@
         <span class="brand-name">Wishlist</span>
         <span class="tagline">shop small, shop local</span>
       </div>
+      <!-- Optional Google sign-in (auth.js); filled in by renderAccount() -->
+      <div id="account" class="account"></div>
     </div>
     <section id="intro" class="intro wrap-x" hidden>
       <div class="title-row">
@@ -52,6 +54,7 @@
     <article id="landing" class="landing" hidden>
       <h1 class="landing-title">Wishlists for things worth giving.<br />Not Amazon.</h1>
       <p class="landing-lead">NFA Wishlist is a free Chrome extension. Save gifts from any independent shop, share one link with friends and family, and they can quietly mark what they've bought so nobody doubles up. The surprise stays a surprise.</p>
+      <p id="myList" class="landing-mine" hidden></p>
       <p class="landing-cta"><span class="pill pill-solid pill-static">Chrome extension coming soon</span></p>
 
       <h2>How it works</h2>
@@ -67,6 +70,58 @@
       <h2>Shop small, shop local</h2>
       <p>NFA is made in San Francisco to send gift money to independent makers and neighborhood shops. It's free. If we ever earn commissions from shop links, 10% of every commission will go to SF community groups.</p>
     </article>
+    <!-- Note (under the title) and shipping address (dropdown). Both optional; filled by share.js. -->
+    <section id="details" class="details" aria-label="Note and shipping address" hidden>
+      <p id="noteText" class="note-text" hidden></p>
+      <div id="ship" class="ship" hidden>
+        <div class="ship-row">
+          <button id="shipToggle" class="ship-toggle" type="button" aria-expanded="false" aria-controls="shipBody">
+            <span id="shipIcon" class="ship-icon" aria-hidden="true"></span>
+            <span class="ship-label">Shipping address</span>
+          </button>
+          <button id="shipCopy" class="text-link ship-copy" type="button" hidden>Copy address</button>
+          <button id="shipChev" class="ship-chev" type="button" aria-label="Show shipping address" aria-expanded="false" aria-controls="shipBody">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+        </div>
+        <div id="shipBody" class="ship-body" hidden></div>
+      </div>
+
+      <!-- Owner only: ⋯ → Add note / address -->
+      <form id="detailsForm" class="details-form" hidden>
+        <div class="edit-block">
+          <label for="noteInput" class="edit-h">Note for friends <span class="opt">(optional)</span></label>
+          <textarea id="noteInput" rows="2" maxlength="500" placeholder="Sizes, favorite colors, what you don't need…"></textarea>
+          <fieldset class="vis">
+            <legend class="sr-only">Who can see the note</legend>
+            <label><input type="radio" name="noteVis" value="public" checked /> Anyone with the link</label>
+            <label><input type="radio" name="noteVis" value="signed_in" /> Anyone who signs in</label>
+            <label><input type="radio" name="noteVis" value="hidden" /> Don't show it</label>
+          </fieldset>
+        </div>
+        <div class="edit-block">
+          <button id="addrToggle" class="addr-toggle" type="button" aria-expanded="false" aria-controls="addrPanel">
+            <span class="ship-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span>
+            <span id="addrToggleLabel" class="edit-h">Add shipping address <span class="opt">(optional)</span></span>
+            <svg class="chev" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div id="addrPanel" class="addr-panel" hidden>
+            <label for="addrInput" class="sr-only">Shipping address</label>
+            <textarea id="addrInput" rows="4" maxlength="400" placeholder="Name&#10;Street, apartment&#10;City, state, ZIP"></textarea>
+            <fieldset class="vis">
+              <legend class="sr-only">Who can see the address</legend>
+              <label><input type="radio" name="addrVis" value="public" /> Anyone with the link</label>
+              <label><input type="radio" name="addrVis" value="signed_in" checked /> Anyone who signs in</label>
+              <label><input type="radio" name="addrVis" value="hidden" /> Don't show it</label>
+            </fieldset>
+          </div>
+        </div>
+        <div class="details-actions">
+          <button class="text-link" type="submit">Save</button>
+          <button id="detailsCancel" class="text-link" type="button">Cancel</button>
+        </div>
+      </form>
+    </section>
     <section id="items" class="grid" aria-label="Wishlist items"></section>
     <!-- Friends only: items someone already got, moved here on page load -->
     <h2 id="boughtHead" class="section-h" hidden>Purchased</h2>
@@ -79,6 +134,8 @@
     <span data-icon="top"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14M12 20V9M7 13l5-5 5 5"/></svg></span>
     <span data-icon="up"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>
     <span data-icon="down"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span>
+    <span data-icon="signout"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg></span>
+    <span data-icon="note"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v12l-4 4H5z"/><path d="M15 20v-4h4M8 9h8M8 13h5"/></svg></span>
     <span data-icon="edit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg></span>
     <span data-icon="download"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></span>
   </template>
@@ -97,7 +154,8 @@
 
   <!-- Toast (with Undo after deletes) -->
   <div id="toast" class="toast" role="status" aria-live="polite" hidden>
-    <span class="toast-msg"></span>
+    <div class="toast-text"><span class="toast-msg"></span><span class="toast-url" hidden></span></div>
+    <button class="toast-copy" type="button" aria-label="Copy link" title="Copy link" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1zM5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg></button>
     <button class="toast-undo" type="button" hidden>Undo</button>
     <button class="toast-close" type="button" aria-label="Dismiss">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -156,6 +214,7 @@
 
   <script src="config.js"></script>
   <script src="amazon.js"></script>
+  <script src="auth.js"></script>
   <script src="share.js"></script>
 </body>
 </html>
