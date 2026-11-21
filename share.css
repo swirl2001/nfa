@@ -448,3 +448,16 @@ select:disabled { opacity: .55; cursor: default; }
 
 /* Photos: the box takes the photo's own shape (set by fitPhoto() when it loads), between 2:3 and 16:10,
    so photos fill it with little or no cropping and no bars. No-photo / Amazon cards keep 4:5. */
+
+/* ---- Amazon cards: black on hover with white links (nothing covers them), buttons in the top corners,
+   name + description crossed out (still readable) and locked ---- */
+.alt { transition: filter .15s; }
+.media:hover .alt, .media:focus-within .alt, .card.menu-open .alt { filter: invert(1); }
+.card.amazon .overlay { background: none; }
+.card.amazon .ov-store { display: none; }
+.card.amazon .ov-bottom { top: 8px; bottom: auto; left: auto; right: 50px; }
+.card.amazon .ov-btn { background: #ffffff; color: #111111; box-shadow: 0 1px 3px rgba(0, 0, 0, .35); }
+.card.amazon .ov-btn:hover, .card.amazon .ov-btn[aria-expanded="true"] { background: #e8eaed; }
+.card.amazon .ov-btn:focus-visible { outline-color: #ffffff; }
+.card.amazon .t-name, .card.amazon .t-desc { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--muted); cursor: default; }
+@media (prefers-reduced-motion: reduce) { .alt { transition: none; } }
