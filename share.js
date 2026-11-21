@@ -921,6 +921,18 @@ function closeDetails() {
 }
 $("#addrToggle").onclick = () => { setAddrOpen($("#addrPanel").hidden); if (!$("#addrPanel").hidden) $("#recipientInput").focus(); };
 $("#detailsCancel").onclick = closeDetails;
+// Keyboard: Return saves (Shift+Return = new line in the note). The address box keeps Return for new
+// lines; ⌘/Ctrl+Return saves from anywhere. Escape cancels. (Single-line boxes submit on Return natively.)
+$("#detailsForm").addEventListener("keydown", (e) => {
+  if (e.isComposing) return; // typing with an input method (e.g. Japanese): Return confirms the text
+  if (e.key === "Escape") { e.preventDefault(); closeDetails(); return; }
+  if (e.key !== "Enter") return;
+  const inAddress = e.target.id === "addrInput";
+  if (e.metaKey || e.ctrlKey || (e.target.id === "noteInput" && !e.shiftKey) || (!inAddress && e.target.tagName === "TEXTAREA" && !e.shiftKey)) {
+    e.preventDefault();
+    $("#detailsForm").requestSubmit();
+  }
+});
 let savingDetails = false;
 $("#detailsForm").onsubmit = async (e) => {
   e.preventDefault();
@@ -1039,6 +1051,12 @@ function buildNewItemCard() {
     err,
     el("div", { class: "new-actions" }, save, cancel));
   form.onsubmit = (e) => { e.preventDefault(); saveNewItem(save); };
+  // Return saves from any box (Shift+Return = new line in the description); Escape cancels.
+  form.addEventListener("keydown", (e) => {
+    if (e.isComposing) return;
+    if (e.key === "Escape") { e.preventDefault(); closeNewItem(); return; }
+    if (e.key === "Enter" && e.target.tagName === "TEXTAREA" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
   card.append(media, form);
   return card;
 }
