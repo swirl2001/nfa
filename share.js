@@ -271,7 +271,7 @@ function renderAccount() {
     e.stopPropagation();
     openMenu(b, [
       { info: u.email ? `Signed in as ${u.email}` : "Signed in with Google" },
-      { icon: "signout", label: "Sign out", run: async () => { await NFAAuth.signOut(); location.reload(); } },
+      { label: "Sign out", run: async () => { await NFAAuth.signOut(); location.reload(); } },
     ]);
   };
   box.append(b);
