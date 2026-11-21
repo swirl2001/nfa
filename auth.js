@@ -42,7 +42,10 @@ const NFAAuth = (() => {
   const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   const here = () => `${location.origin}${location.pathname}`; // must be in Supabase's allowed redirect URLs
 
-  async function signIn() {
+  const NO_AUTO = "nfa-no-auto"; // localStorage: signed out on purpose here, so don't sign in automatically
+  // opts.hint: email to pre-select at Google. opts.auto: started by autoSignIn, not by a click.
+  async function signIn(opts = {}) {
+    if (!opts.auto) ls.del(NO_AUTO);
     const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
     const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
     // Return to the list the person was on, without any edit token in it.
@@ -50,6 +53,7 @@ const NFAAuth = (() => {
     back.searchParams.delete("edit");
     ss.set(PENDING, { verifier, returnTo: back.pathname + back.search });
     const q = new URLSearchParams({ provider: "google", redirect_to: here(), code_challenge: challenge, code_challenge_method: "s256" });
+    if (opts.hint) q.set("login_hint", opts.hint); // Google picks this account without asking
     location.assign(`${BASE}/auth/v1/authorize?${q}`);
   }
 
@@ -92,13 +96,24 @@ const NFAAuth = (() => {
     return s ? { email: s.email, name: s.name } : null;
   }
 
+  // Signed in in the extension but not on this site: go through Google once, quietly.
+  // Once per tab session at most (no loops), never after a sign-out on this site.
+  const AUTO_TRIED = "nfa-auto-tried";
+  function autoSignIn(email) {
+    if (user() || ls.get(NO_AUTO) || ss.get(AUTO_TRIED)) return false;
+    ss.set(AUTO_TRIED, true);
+    signIn({ auto: true, hint: email });
+    return true;
+  }
+
   async function signOut() {
     const t = await token().catch(() => null);
     ls.del(SESSION);
+    ls.set(NO_AUTO, true);
     if (t) await call("/auth/v1/logout?scope=local", { method: "POST", token: t }).catch(() => {});
   }
 
   const forget = () => ls.del(SESSION);
 
-  return { signIn, finishRedirect, token, user, signOut, forget };
+  return { signIn, autoSignIn, finishRedirect, token, user, signOut, forget };
 })();

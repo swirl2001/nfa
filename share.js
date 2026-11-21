@@ -189,6 +189,7 @@ async function load() {
   readParams();
   renderAccount();
   if (authMsg) toast(authMsg);
+  maybeAutoSignIn(); // in parallel: only acts if the NFA extension here is signed in and this site isn't
   if (!slug) { showLanding(); return; } // nfawishlist.com with no list code → home page
   // Signed in and it's your list: edit it here (same as the private edit link, but the token
   // stays in memory, so the address bar keeps showing the friends link).
@@ -774,6 +775,22 @@ async function isMyList(s) {
   const mine = (await Promise.all(ids.map(ask))).some(Boolean);
   if (mine) rememberMyList(s);
   return mine;
+}
+
+// The NFA extension in this Chrome is signed in with Google but this site isn't: sign the site in too.
+async function maybeAutoSignIn() {
+  if (NFAAuth.user()) return;
+  const ids = NFA_CONFIG.extensionIds || [];
+  const rt = window.chrome && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime : null;
+  if (!rt || !ids.length) return;
+  for (const id of ids) {
+    const a = await new Promise((resolve) => {
+      setTimeout(() => resolve(null), 1000);
+      try { rt.sendMessage(id, { type: "nfa-account" }, (r) => { void chrome.runtime.lastError; resolve(r || null); }); }
+      catch (e) { resolve(null); }
+    });
+    if (a && a.signedIn) { NFAAuth.autoSignIn(typeof a.email === "string" ? a.email : ""); return; }
+  }
 }
 
 load();
