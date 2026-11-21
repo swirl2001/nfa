@@ -285,7 +285,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .meta { color: var(--muted); font-size: 14px; }
 
 .landing { padding: 24px 0 40px; }
-.landing-title { font-size: clamp(30px, 6vw, 44px); margin-top: 12px; }
+.landing-title { font-size: clamp(44px, 11vw, 80px); margin-top: 12px; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+.landing-sub { font-size: clamp(20px, 3.5vw, 26px); font-weight: 600; margin: 10px 0 0 !important; }
 .landing-lead { font-size: 18px; color: var(--muted); margin-top: 12px !important; }
 .landing-cta { margin: 20px 0 8px !important; }
 .pill-static { cursor: default; }
@@ -477,3 +478,10 @@ select:disabled { opacity: .55; cursor: default; }
 .btn-save:hover { border-color: var(--muted); }
 .btn-save:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .btn-save:disabled { opacity: .55; cursor: default; }
+
+/* Home page screenshots under "How it works" */
+.shots { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 16px; margin: 24px 0 8px; max-width: 680px; }
+.shot { margin: 0; }
+.shot-wide { grid-column: 1 / -1; }
+.shot img { display: block; width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(0,0,0,.08); background: var(--card); }
+.shot figcaption { margin-top: 8px; font-size: 14px; color: var(--muted); }
