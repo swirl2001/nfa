@@ -449,10 +449,13 @@ select:disabled { opacity: .55; cursor: default; }
 /* Photos: the box takes the photo's own shape (set by fitPhoto() when it loads), between 2:3 and 16:10,
    so photos fill it with little or no cropping and no bars. No-photo / Amazon cards keep 4:5. */
 
-/* ---- Amazon cards: black on hover with white links (nothing covers them), buttons in the top corners,
-   name + description crossed out (still readable) and locked ---- */
-.alt { transition: filter .15s; }
-.media:hover .alt, .media:focus-within .alt, .card.menu-open .alt { filter: invert(1); }
+/* ---- Amazon cards: on hover a muted grey card, scribbles fade to 20%, links turn white (nothing covers
+   them); delete button top right, no ⋯ menu; name + description crossed out (still readable) and locked ---- */
+.alt, .alt-scribble, .alt-etsy, .alt-web { transition: background-color .15s, opacity .15s, color .15s; }
+.media:hover .alt, .media:focus-within .alt { background: #5f6368; }
+.media:hover .alt-scribble, .media:focus-within .alt-scribble { opacity: .2; }
+.media:hover .alt-etsy, .media:hover .alt-web, .media:focus-within .alt-etsy, .media:focus-within .alt-web { color: #ffffff; }
+.media:hover .alt a:focus-visible, .media:focus-within .alt a:focus-visible { outline-color: #ffffff; }
 .card.amazon .overlay { background: none; }
 .card.amazon .ov-store { display: none; }
 .card.amazon .ov-bottom { top: 8px; bottom: auto; left: auto; right: 50px; }
@@ -460,4 +463,4 @@ select:disabled { opacity: .55; cursor: default; }
 .card.amazon .ov-btn:hover, .card.amazon .ov-btn[aria-expanded="true"] { background: #e8eaed; }
 .card.amazon .ov-btn:focus-visible { outline-color: #ffffff; }
 .card.amazon .t-name, .card.amazon .t-desc { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--muted); cursor: default; }
-@media (prefers-reduced-motion: reduce) { .alt { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .alt, .alt-scribble, .alt-etsy, .alt-web { transition: none; } }

@@ -333,7 +333,7 @@ function card(tpl, it, owner) {
     alt.hidden = false;
     $(".alt-etsy", alt).href = `https://www.etsy.com/search?q=${q}`;
     $(".alt-web", alt).href = `https://www.google.com/search?tbm=shop&q=${q}+-amazon`;
-    node.classList.add("amazon"); // black on hover, name crossed out and locked, only "Move to bottom"
+    node.classList.add("amazon"); // grey on hover, name crossed out and locked, no ⋯ menu
   }
   $(".badge-out", node).hidden = it.in_stock !== false;
 
@@ -362,11 +362,6 @@ function card(tpl, it, owner) {
     e.stopPropagation();
     const inTop = node.parentElement === $("#items");
     const isFirst = !node.previousElementSibling, isLast = !node.nextElementSibling;
-    if (amazon) { // Amazon items: nothing to open, copy or edit
-      if (!inTop || isLast) { toast("It's already at the bottom."); return; }
-      openMenu(more, [{ icon: "bottom", label: "Move to bottom", run: () => moveToBottom(it) }], node);
-      return;
-    }
     openMenu(more, [
       isEdit && { icon: "edit", label: "Edit details", run: () => $(".t-name", node).click() },
       link && { icon: "open", label: "Open in new tab", run: () => visitStore(it, link, owner) },
@@ -376,7 +371,7 @@ function card(tpl, it, owner) {
       isEdit && inTop && !isLast && { icon: "down", label: "Move down", run: () => moveBy(it, node, 1) },
     ], node);
   };
-  if (!link && !isEdit) more.remove();
+  if ((!link && !isEdit) || amazon) more.remove(); // Amazon items: nothing to open, copy or edit
 
   // Text
   $(".t-name", node).textContent = it.name || "Untitled item";
@@ -455,15 +450,6 @@ async function setPosition(it, position) {
   await ownerRpc("owner_update_item", { p_item_id: it.id, p_patch: { position } });
 }
 
-async function moveToBottom(it) {
-  const sorted = [...items].sort(byPosition);
-  const last = sorted[sorted.length - 1];
-  if (last === it) return;
-  try {
-    await setPosition(it, (last.position ?? 0) + 1); render(true);
-    refocus(it); announce(`${it.name || "Item"} moved to the bottom.`);
-  } catch (e) { toast("Couldn't move that. Try again."); }
-}
 async function moveToTop(it) {
   const sorted = [...items].sort(byPosition);
   if (sorted[0] === it) return;
