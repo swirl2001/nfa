@@ -371,3 +371,39 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .toast-copy:hover { background: rgba(255, 255, 255, .12); }
 .toast-copy:focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }
 .toast.has-url .toast-msg { white-space: normal; }
+
+/* ---- Owner: ⋯ → Add item (blank card at the top) ---- */
+.new-card { gap: 10px; }
+.new-media { display: grid; }
+.new-media .img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.new-photo {
+  position: relative; z-index: 1; display: grid; place-items: center; align-content: center; gap: 6px;
+  margin: 10px; border: 2px dashed var(--line); border-radius: 10px; color: var(--muted);
+  font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; padding: 10px;
+}
+.new-photo:hover { border-color: var(--muted); color: var(--ink); }
+.new-photo-icon { font-size: 30px; font-weight: 300; line-height: 1; }
+.new-photo.has-photo { align-self: end; margin: 0 10px 10px; border: 0; padding: 6px 12px; justify-self: center;
+  background: var(--badge-bg); color: var(--ink); border-radius: 999px; box-shadow: var(--shadow); }
+.new-photo.has-photo .new-photo-icon { display: none; }
+.new-photo-off { cursor: default; }
+input#niPhoto:focus-visible + .new-photo { outline: 2px solid var(--ink); outline-offset: 2px; }
+.new-form { display: grid; gap: 8px; }
+.new-field { display: grid; gap: 3px; }
+.new-field label { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.new-field input, .new-field textarea {
+  width: 100%; font: inherit; font-size: 14px; color: var(--ink); background: var(--card);
+  border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; resize: vertical;
+}
+.new-field input::placeholder { color: var(--placeholder); }
+.new-field input:focus, .new-field textarea:focus { outline: none; box-shadow: 0 0 0 2px var(--ink); border-color: transparent; }
+.new-error { margin: 0; font-size: 13px; color: var(--ink); font-weight: 600; }
+.new-actions { display: flex; gap: 18px; align-items: center; }
+.text-link[disabled] { opacity: .55; cursor: default; }
+
+/* No photo: Sean's raven on a soft grey box, shop name under it (Amazon items keep their own card on top) */
+:root { --noimg-bg: #e8eaed; }
+@media (prefers-color-scheme: dark) { :root { --noimg-bg: #3c4043; } }
+.noimg { background: var(--noimg-bg); }
+.noimg-mark { width: 24%; min-width: 30px; max-width: 56px; height: auto; display: block; }
+.noimg-store { font-weight: 600; color: var(--muted); }

@@ -36,6 +36,7 @@ const NFAAuth = (() => {
       accessToken: d.access_token, refreshToken: d.refresh_token,
       expiresAt: d.expires_at ? d.expires_at * 1000 : Date.now() + (d.expires_in || 3600) * 1000,
       email: u.email || meta.email || "", name: meta.full_name || meta.name || "",
+      userId: u.id || "",
     };
   }
 
@@ -115,5 +116,13 @@ const NFAAuth = (() => {
 
   const forget = () => ls.del(SESSION);
 
-  return { signIn, autoSignIn, finishRedirect, token, user, signOut, forget };
+  // The signed-in user's id (photos go in a folder named after it). Older sessions: read it from the token.
+  function userId() {
+    const s = ls.get(SESSION);
+    if (!s) return "";
+    if (s.userId) return s.userId;
+    try { return JSON.parse(atob(s.accessToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub || ""; } catch (e) { return ""; }
+  }
+
+  return { signIn, autoSignIn, finishRedirect, token, user, userId, signOut, forget };
 })();

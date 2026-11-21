@@ -600,6 +600,7 @@ $("#listMenuBtn").onclick = (e) => {
   openMenu($("#listMenuBtn"), [
     { icon: "edit", label: "Rename", run: openRename },
     { icon: "note", label: "Add note / address", run: openDetails },
+    { icon: "plus", label: "Add item", run: openNewItem },
     { icon: "copy", label: "Copy list", hint: "(text)", run: copyList },
     { icon: "download", label: "Download list", hint: "(CSV)", run: downloadList },
   ]);
@@ -919,3 +920,180 @@ $("#detailsForm").onsubmit = async (e) => {
     savingDetails = false;
   }
 };
+
+
+// ---------- owner: ⋯ → Add item (your own item, not saved from a shop) ----------
+// A blank card at the top of the list: photo (upload; needs Google sign-in), name, link (optional),
+// description, price. Saved with owner_restore_item (inserts an item with our own id). Photos are
+// resized to ≤1600px JPEG in the browser and uploaded to Storage bucket item-photos/<user id>/ (migration 008).
+const PHOTO_BUCKET = "item-photos";
+let newItemPhoto = null; // Blob ready to upload
+
+function openNewItem() {
+  const existing = $("#newItem");
+  if (existing) { $("#niName").focus(); return; }
+  const node = buildNewItemCard();
+  $("#items").prepend(node);
+  setState("");
+  node.scrollIntoView({ block: "nearest", behavior: reduceMotion() ? "auto" : "smooth" });
+  $("#niName").focus();
+}
+
+function el(tag, props = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") n.className = v;
+    else if (k === "text") n.textContent = v;
+    else if (k in n && typeof v !== "string") n[k] = v;
+    else n.setAttribute(k, v);
+  }
+  kids.forEach((c) => c && n.append(c));
+  return n;
+}
+
+function buildNewItemCard() {
+  newItemPhoto = null;
+  const signedIn = !!NFAAuth.user();
+  const card = el("article", { class: "card new-card", id: "newItem", "aria-label": "New item" });
+
+  // Photo
+  const media = el("div", { class: "media new-media" });
+  const preview = el("img", { class: "img", alt: "", hidden: true });
+  const file = el("input", { type: "file", id: "niPhoto", accept: "image/jpeg,image/png,image/webp", class: "sr-only" });
+  const pick = el("label", { class: "new-photo", for: "niPhoto" },
+    el("span", { class: "new-photo-icon", "aria-hidden": "true", text: "+" }),
+    el("span", { class: "new-photo-label", text: "Add photo" }));
+  if (signedIn) {
+    file.onchange = async () => {
+      const f = file.files && file.files[0];
+      if (!f) return;
+      try {
+        const { blob, dataUrl } = await shrinkPhoto(f);
+        newItemPhoto = blob;
+        preview.src = dataUrl; preview.hidden = false; preview.alt = "Photo for the new item";
+        pick.classList.add("has-photo");
+        $(".new-photo-label", pick).textContent = "Change photo";
+      } catch (e) {
+        toast("Couldn't use that photo. Try a JPG or PNG.");
+      }
+    };
+    media.append(preview, file, pick);
+  } else {
+    const b = el("button", { type: "button", class: "text-link", text: "Sign in to add a photo" });
+    b.onclick = () => NFAAuth.signIn();
+    media.append(el("div", { class: "new-photo new-photo-off" }, b));
+  }
+
+  // Fields
+  const field = (id, label, input) => el("div", { class: "new-field" }, el("label", { for: id, text: label }), input);
+  const name = el("input", { id: "niName", type: "text", maxlength: "200", autocomplete: "off" });
+  const link = el("input", { id: "niLink", type: "url", maxlength: "2000", placeholder: "https://", autocomplete: "off" });
+  const desc = el("textarea", { id: "niDesc", rows: "2", maxlength: "1000" });
+  const price = el("input", { id: "niPrice", type: "text", inputmode: "decimal", maxlength: "20", placeholder: "$0.00", autocomplete: "off" });
+  const err = el("p", { class: "new-error", id: "niError", role: "alert", hidden: true });
+  const save = el("button", { type: "submit", class: "text-link", text: "Add to list" });
+  const cancel = el("button", { type: "button", class: "text-link", text: "Cancel" });
+  cancel.onclick = closeNewItem;
+
+  const form = el("form", { class: "new-form", novalidate: true },
+    field("niName", "Name", name),
+    field("niLink", "Link (optional)", link),
+    field("niDesc", "Description (optional)", desc),
+    field("niPrice", "Price (optional)", price),
+    err,
+    el("div", { class: "new-actions" }, save, cancel));
+  form.onsubmit = (e) => { e.preventDefault(); saveNewItem(save); };
+  card.append(media, form);
+  return card;
+}
+
+function closeNewItem() {
+  const n = $("#newItem");
+  if (n) n.remove();
+  newItemPhoto = null;
+  if (!items.length) setState("Your list is empty. Save things with the NFA Wishlist extension.");
+  $("#listMenuBtn").focus();
+}
+
+function newItemError(msg, focusId) {
+  const e = $("#niError");
+  e.textContent = msg; e.hidden = !msg;
+  if (focusId) $("#" + focusId).focus();
+}
+
+// Resize to ≤1600px on the long side, JPEG ~85%. Returns the upload blob + a data: preview (CSP allows data: images).
+async function shrinkPhoto(file) {
+  if (file.size > 25 * 1024 * 1024) throw new Error("too big");
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, h); // transparent PNGs get a white background
+  ctx.drawImage(bmp, 0, 0, w, h);
+  const blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("encode"))), "image/jpeg", 0.85));
+  return { blob, dataUrl: c.toDataURL("image/jpeg", 0.7) };
+}
+
+async function uploadPhoto(blob) {
+  const tok = await NFAAuth.token(), uid = NFAAuth.userId();
+  if (!tok || !uid) throw new Error("Sign in to add a photo.");
+  const path = `${uid}/${crypto.randomUUID()}.jpg`;
+  const res = await fetch(`${NFA_CONFIG.supabaseUrl}/storage/v1/object/${PHOTO_BUCKET}/${path}`, {
+    method: "POST",
+    headers: { apikey: NFA_CONFIG.supabaseKey, Authorization: `Bearer ${tok}`, "Content-Type": "image/jpeg", "x-upsert": "false", "cache-control": "31536000" },
+    body: blob,
+  });
+  if (!res.ok) throw new Error(`upload ${res.status}`);
+  return `${NFA_CONFIG.supabaseUrl}/storage/v1/object/public/${PHOTO_BUCKET}/${path}`;
+}
+
+let savingNew = false;
+async function saveNewItem(btn) {
+  if (savingNew) return;
+  newItemError("");
+  const name = $("#niName").value.replace(/\s+/g, " ").trim().slice(0, 200);
+  let url = $("#niLink").value.trim();
+  const description = $("#niDesc").value.replace(/\s+/g, " ").trim().slice(0, 1000);
+  const priceText = $("#niPrice").value.trim();
+  if (!name) return newItemError("Add a name for this item.", "niName");
+  if (url) {
+    if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+    if (!isWebLink(url)) return newItemError("That link doesn't look right. Check it, or leave it empty.", "niLink");
+    if (nfaIsAmazon(url)) return newItemError("NFA doesn't link to Amazon. Add a link to another shop, or leave it empty.", "niLink");
+  }
+  let price = null;
+  if (priceText) {
+    const p = parseMoney(priceText);
+    if (p === undefined) return newItemError("Enter a price like 24 or 24.50, or leave it empty.", "niPrice");
+    price = p;
+  }
+  savingNew = true;
+  btn.disabled = true; btn.textContent = newItemPhoto ? "Uploading photo…" : "Adding…";
+  try {
+    const image = newItemPhoto ? await uploadPhoto(newItemPhoto) : null;
+    const top = Math.min(0, ...items.map((i) => (typeof i.position === "number" ? i.position : Number(i.position) || 0)));
+    const store = url ? new URL(url).hostname.replace(/^www\./, "") : null;
+    const item = {
+      id: crypto.randomUUID(), name, description: description || null, url: url || null, store,
+      image, price, saved_price: price, currency: price == null ? null : "USD",
+      position: top - 1, saved_at: new Date().toISOString(), amazon_blocked: false, owned: false,
+    };
+    const ok = await ownerRpc("owner_restore_item", { p_item: item });
+    if (!ok) throw new Error("not saved");
+    $("#newItem").remove();
+    newItemPhoto = null;
+    items.push(item);
+    render(true);
+    refocus(item);
+    toast("Added to your list.");
+  } catch (e) {
+    btn.disabled = false; btn.textContent = "Add to list";
+    newItemError(/upload/.test(e.message)
+      ? "Couldn't upload the photo. Try again, or add the item without a photo."
+      : "Couldn't add the item. Check your connection and try again.");
+  } finally {
+    savingNew = false;
+  }
+}
