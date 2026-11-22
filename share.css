@@ -217,7 +217,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .ask-text { margin: 0; font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
 .ask-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 /* Gift-mark limit card: same bottom card, Save/Cancel pattern (Not now link, Sign in pill on the right) */
-.limit { align-items: flex-start; }
+.limit { align-items: flex-start; padding-bottom: 17px; } /* 18px visible above the title text and below the Sign in pill (Sean, Nov 21) */
 .limit-text { margin: 0; font-size: 14px; line-height: 1.4; color: var(--muted); }
 
 /* Claimed: greyed out for friends (the person who marked it can still Undo) */
