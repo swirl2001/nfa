@@ -8,3 +8,10 @@
   Strict-Transport-Security: max-age=31536000
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   X-Robots-Tag: noindex, nofollow
+
+# Scripts and styles: always check for a newer copy (cheap: unchanged files come back as 304).
+# Without this, a browser could pair a new page with yesterday's script and get stuck (Nov 22).
+/*.js
+  Cache-Control: no-cache
+/*.css
+  Cache-Control: no-cache
