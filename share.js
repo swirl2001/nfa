@@ -312,7 +312,7 @@ function render(owner) {
   const boughtGrid = $("#bought");
   boughtGrid.textContent = "";
   bought.forEach((it) => boughtGrid.appendChild(card(tpl, it, owner)));
-  $("#boughtHead").textContent = isEdit ? "Received" : "Purchased";
+  $("#boughtHead").textContent = isEdit ? "Received" : "Gifted";
   boughtGrid.hidden = $("#boughtHead").hidden = !bought.length;
 }
 
@@ -402,8 +402,8 @@ function card(tpl, it, owner) {
 
 function wireOwned(node, it) {
   const buy = $(".buy", node), unbuy = $(".unbuy", node);
-  $(".unbuy-on", node).textContent = "✓ I own this";
-  unbuy.setAttribute("aria-label", `I own ${it.name || "this item"}. Click to undo.`);
+  $(".unbuy-on", node).textContent = "✓ Received";
+  unbuy.setAttribute("aria-label", `${it.name || "This item"} is marked as received. Click to undo.`);
   // Owner's own page: items they own stay in full colour (greyed-out is only for friends,
   // where it means "not available"). They still move to the bottom section on the next load.
   const show = () => {
@@ -418,9 +418,9 @@ function wireOwned(node, it) {
       it.owned = value;
       show();
       if (value) {
-        toast("Marked as yours. Friends and family will see it's taken.", () => setOwned(false));
+        toast("Marked as received. Friends and family will see it's taken.", () => setOwned(false));
       } else {
-        toast("No longer marked as yours.");
+        toast("No longer marked as received.");
       }
     } catch (e) {
       toast("Couldn't save that. Try again.");
