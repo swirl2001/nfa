@@ -75,7 +75,6 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .icon:hover, .icon[aria-expanded="true"] { background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
 .icon:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 
-.rename { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-width: 420px; font-size: 14px; font-weight: 600; }
 
 .wrap { flex: 1; padding-top: 12px; padding-bottom: 32px; }
 .state { color: var(--muted); padding: 24px 0; margin: 0; }
@@ -198,12 +197,6 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .section-h { font-size: 18px; font-weight: 700; margin: 40px 0 14px; padding-top: 18px; border-top: 1px solid var(--line); }
 .row-end { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
 
-/* Rename input */
-#renameInput {
-  font: inherit; font-size: 16px; /* 16px stops iOS zooming in */
-  padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); width: 100%;
-}
-#renameInput:focus { outline: none; box-shadow: 0 0 0 2px var(--ink); }
 
 /* "Did you buy it?" prompt (bottom sheet) */
 .ask {
@@ -509,3 +502,9 @@ select:disabled { opacity: .55; cursor: default; }
 }
 .shot img { display: block; width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(0,0,0,.08); background: var(--card); }
 .shot figcaption { margin-top: 8px; font-size: 14px; color: var(--muted); }
+
+/* Owner's list title: click to rename in place */
+.title-editable { cursor: text; border-radius: 8px; padding: 2px 6px; margin: -2px auto -2px -6px; flex: 0 1 auto; outline: none; } /* hug the text */
+.title-editable:hover { background: var(--hover); }
+.title-editable:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
+.title-editable.editing { background: var(--card); box-shadow: 0 0 0 2px var(--ink); }

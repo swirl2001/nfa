@@ -278,9 +278,51 @@ function renderAccount() {
   box.append(b);
 }
 
+// ---- list title: click to rename in place (Sean, Nov 22). Return or click away saves, Escape cancels. ----
+function makeTitleEditable(el, { max, getText, save }) {
+  el.tabIndex = 0;
+  el.setAttribute("role", "textbox");
+  el.setAttribute("aria-label", "Wishlist name");
+  el.title = "Click to rename";
+  el.classList.add("title-editable");
+  let before = "";
+  const start = () => {
+    if (el.isContentEditable) return;
+    before = getText();
+    el.textContent = before;
+    el.contentEditable = "plaintext-only";
+    el.classList.add("editing");
+    el.focus();
+    const r = document.createRange(); r.selectNodeContents(el);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  };
+  const finish = (keep) => {
+    if (!el.isContentEditable) return;
+    el.contentEditable = "false";
+    el.classList.remove("editing");
+    const text = el.textContent.replace(/\s+/g, " ").trim().slice(0, max);
+    if (!keep || !text || text === before) { el.textContent = before; return; }
+    el.textContent = text;
+    save(text, before);
+  };
+  el.addEventListener("click", start);
+  el.addEventListener("keydown", (e) => {
+    if (!el.isContentEditable) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); start(); }
+      return;
+    }
+    if (e.isComposing) return;
+    if (e.key === "Enter") { e.preventDefault(); el.blur(); }
+    else if (e.key === "Escape") { e.preventDefault(); finish(false); el.focus(); }
+  });
+  el.addEventListener("blur", () => finish(true));
+  return start;
+}
+
 function renderHeader(owner) {
   document.title = `${listTitle} · NFA Wishlist`;
-  $("#title").textContent = listTitle;
+  if (!$("#title").isContentEditable) $("#title").textContent = listTitle;
+  wireTitleEdit();
   $("#explainer").textContent = signedInOwner
     ? "This is your list. Edit it here, and use the share button to copy the link for friends and family. What's been bought stays hidden from you."
     : isEdit
@@ -631,22 +673,21 @@ $("#listMenuBtn").onclick = (e) => {
     { icon: "download", label: "Download list", hint: "(CSV)", run: downloadList },
   ]);
 };
-function openRename() {
-  const f = $("#renameForm");
-  f.hidden = false;
-  $("#renameInput").value = listTitle;
-  $("#renameInput").focus(); $("#renameInput").select();
+let startRename = () => {};
+function openRename() { startRename(); }
+// Owner pages only: the title renames in place.
+function wireTitleEdit() {
+  if (!isEdit || $("#title").classList.contains("title-editable")) return;
+  startRename = makeTitleEditable($("#title"), {
+    max: 100,
+    getText: () => listTitle,
+    save: async (t, before) => {
+      listTitle = t; document.title = `${listTitle} · NFA Wishlist`;
+      try { await ownerRpc("owner_rename_list", { p_title: t }); }
+      catch (err) { listTitle = before; renderHeader(true); toast("Couldn't rename. Try again."); }
+    },
+  });
 }
-$("#renameCancel").onclick = () => { $("#renameForm").hidden = true; };
-$("#renameForm").onsubmit = async (e) => {
-  e.preventDefault();
-  const t = $("#renameInput").value.replace(/\s+/g, " ").trim();
-  if (!t) return;
-  try {
-    await ownerRpc("owner_rename_list", { p_title: t });
-    listTitle = t; $("#renameForm").hidden = true; renderHeader(true);
-  } catch (err) { toast("Couldn't rename. Try again."); }
-};
 
 const sortedItems = () => (isEdit ? [...items].sort(byPosition) : items);
 function copyList() {
