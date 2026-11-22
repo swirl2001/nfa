@@ -208,7 +208,7 @@ async function load() {
   } catch (e) { setState("Couldn't load this list. Check your connection and refresh."); return; }
   if (!data) {
     setState(isEdit
-      ? "This edit link doesn't work anymore. Open your list again from the NFA Wishlist extension (⋯ → Open in new tab)."
+      ? "This edit link doesn't work anymore. Open your list again from the NFA Wishlist extension (⋯ → Open wishlist)."
       : "This list doesn't exist anymore, or the link is wrong.");
     return;
   }
