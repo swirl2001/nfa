@@ -176,6 +176,19 @@
     </div>
   </section>
 
+  <!-- Gift-mark limit (migration 010): a 4th "Mark as gifted" from this browser without signing in -->
+  <section id="limit" class="ask limit" role="dialog" aria-labelledby="limitTitle" aria-describedby="limitText" hidden>
+    <img id="limitImg" class="ask-img" alt="" referrerpolicy="no-referrer" />
+    <div class="ask-body">
+      <p id="limitTitle" class="ask-text">You've marked 3 gifts on this list</p>
+      <p id="limitText" class="limit-text">To mark more, sign in with Google. It keeps anyone with the link from marking everything as gifted.</p>
+      <div class="form-actions">
+        <button id="limitNo" class="text-link" type="button">Not now</button>
+        <button id="limitYes" class="btn-save" type="button">Sign in with Google</button>
+      </div>
+    </div>
+  </section>
+
   <!-- Toast (with Undo after deletes) -->
   <div id="toast" class="toast" role="status" aria-live="polite" hidden>
     <div class="toast-text"><span class="toast-msg"></span><span class="toast-url" hidden></span></div>

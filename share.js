@@ -220,6 +220,7 @@ async function load() {
   items = Array.isArray(data.items) ? data.items : [];
   render(owner);
   loadDetails(); // note + shipping address (each optional)
+  resumePendingMark();
   maybeAsk();
 }
 
@@ -684,6 +685,18 @@ const store_ = {
   del(k) { try { localStorage.removeItem(k); } catch (e) {} },
 };
 const mine = () => store_.get(MINE_KEY) || {};
+// Random code for this browser, sent with each mark so the server can apply the 3-marks-per-list limit
+// for people who aren't signed in (migration 010). Only a salted hash is stored on the server.
+const BROWSER_KEY = "nfa-browser";
+function browserId() {
+  let id = store_.get(BROWSER_KEY);
+  if (typeof id !== "string" || id.length < 16) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).replace(/-/g, "");
+    store_.set(BROWSER_KEY, id);
+  }
+  return id;
+}
+const PENDING_MARK = "nfa-pending-mark"; // sessionStorage: {slug, itemId} to mark after signing in from the limit card
 const setMine = (id, token) => { const m = mine(); if (token) m[id] = token; else delete m[id]; store_.set(MINE_KEY, m); };
 const cards = new Map();               // itemId → { node, it }
 
@@ -713,7 +726,18 @@ async function markPurchased(it) {
   const c = cards.get(it.id); if (!c) return;
   $(".buy", c.node).disabled = true;
   try {
-    const token = await rpc("mark_purchased", { p_slug: slug, p_item_id: it.id });
+    let token;
+    try { token = await rpc("mark_purchased", { p_slug: slug, p_item_id: it.id, p_browser: browserId() }); }
+    catch (e) {
+      // Migration 010 not run yet: the server only knows the 2-argument version.
+      if (!/could not find the function|PGRST202/i.test(e.message)) throw e;
+      token = await rpc("mark_purchased", { p_slug: slug, p_item_id: it.id });
+    }
+    if (token === "limit") {         // 3 marks already from this browser: offer sign-in
+      $(".buy", c.node).disabled = false;
+      showLimit(it);
+      return;
+    }
     if (token) {
       setMine(it.id, token);
       showClaimed(c.node, it, true);
@@ -752,8 +776,38 @@ function visitStore(it, link, owner) {
 }
 const ASK_MIN_MS = 4000;                 // ignore quick tab flips
 const ASK_MAX_MS = 3 * 24 * 3600 * 1000; // forget after 3 days
+// ---------- gift-mark limit card ----------
+function showLimit(it) {
+  const c = cards.get(it.id); if (!c) return;
+  $("#ask").hidden = true;
+  const img = $("#limitImg"), src = imageLink(it);
+  if (src) { img.src = src; img.hidden = false; img.onerror = () => { img.hidden = true; }; } else img.hidden = true;
+  $("#limit").hidden = false;
+  const close = () => {
+    $("#limit").hidden = true;
+    document.removeEventListener("keydown", onKey);
+    const b = $(".buy", c.node); if (b && !b.hidden) b.focus({ preventScroll: false });
+  };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  $("#limitNo").onclick = close;
+  $("#limitYes").onclick = () => {
+    try { sessionStorage.setItem(PENDING_MARK, JSON.stringify({ slug, itemId: it.id })); } catch (e) {}
+    NFAAuth.signIn();
+  };
+  $("#limitYes").focus({ preventScroll: true });
+}
+// Back from signing in on the limit card: mark the item they were trying to mark.
+function resumePendingMark() {
+  let p = null;
+  try { p = JSON.parse(sessionStorage.getItem(PENDING_MARK) || "null"); sessionStorage.removeItem(PENDING_MARK); } catch (e) {}
+  if (!p || p.slug !== slug || !NFAAuth.user() || isEdit || document.body.classList.contains("owner-view")) return;
+  const c = cards.get(p.itemId);
+  if (c && !c.it.claimed) markPurchased(c.it);
+}
+
 function maybeAsk() {
-  if (isEdit || document.body.classList.contains("owner-view") || !$("#ask").hidden) return;
+  if (isEdit || document.body.classList.contains("owner-view") || !$("#ask").hidden || !$("#limit").hidden) return;
   const v = store_.get(VISIT_KEY);
   if (!v || v.slug !== slug) return;
   const age = Date.now() - v.at;

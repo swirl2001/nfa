@@ -216,6 +216,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .ask-body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 8px; }
 .ask-text { margin: 0; font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
 .ask-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+/* Gift-mark limit card: same bottom card, Save/Cancel pattern (Not now link, Sign in pill on the right) */
+.limit { align-items: flex-start; }
+.limit-text { margin: 0; font-size: 14px; line-height: 1.4; color: var(--muted); }
 
 /* Claimed: greyed out for friends (the person who marked it can still Undo) */
 .card.claimed .media img, .card.claimed .noimg { filter: grayscale(1); opacity: .45; }
