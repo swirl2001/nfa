@@ -258,12 +258,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
 /* Text only screen readers hear (announcements). */
 .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 /* Editable lines on the owner's page are at least 24px tall (touch target size). */
-.owner .t-name, .owner .t-price { line-height: 24px; }
+/* Same idea as the extension: 24px targets, spare height outside the text block (name above, price below). */
+.owner .txt > .t-name { line-height: 1.3; padding-top: calc(24px - 1.3em); }
+.owner .txt > .t-price { line-height: 1.3; padding-bottom: calc(24px - 1.3em); }
+.owner .txt { padding-top: 6px; }
 /* ≥24px tall target, text centred (same as the extension) */
-.owner .txt > .t-desc { padding-top: calc(20px - 1.35em); padding-bottom: 0; border-bottom: 4px solid transparent; } /* beats .owner .txt > div padding; border, not padding, so a clamped 3rd line can't peek out */
+.owner .txt > .t-desc { padding-top: calc(22px - 1.35em); padding-bottom: 0; border-bottom: 5px solid transparent; } /* beats .owner .txt > div padding; border, not padding, so a clamped 3rd line can't peek out */
 /* Friends: same rhythm as the editable views (~7px between name, description and price) */
-.friend .t-desc { margin-top: 2px; }
-.friend .t-price { margin-top: 4px; }
+.friend .t-desc, .owner-view .t-desc { margin-top: 2px; }
+.friend .t-price, .owner-view .t-price { margin-top: 4px; }
 /* Respect "reduce motion": no fades, slides or smooth scrolling. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
@@ -472,6 +475,7 @@ select:disabled { opacity: .55; cursor: default; }
 .card.amazon .ov-btn:hover, .card.amazon .ov-btn[aria-expanded="true"] { background: #e8eaed; }
 .card.amazon .ov-btn:focus-visible { outline-color: #ffffff; }
 .card.amazon .t-name, .card.amazon .t-desc { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--muted); cursor: default; }
+.card.amazon .t-desc:empty { display: none; } /* locked, no placeholder: don't leave an empty 24px gap */
 @media (prefers-reduced-motion: reduce) { .alt, .alt-scribble, .alt-etsy, .alt-web { transition: none; } }
 
 /* ---- Save / Cancel standard (every form, site + extension; keep both copies the same) ----
