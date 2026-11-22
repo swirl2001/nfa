@@ -217,7 +217,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .ask-text { margin: 0; font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
 .ask-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 /* Gift-mark limit card: same bottom card, Save/Cancel pattern (Not now link, Sign in pill on the right) */
-.limit { align-items: flex-start; padding-bottom: 17px; } /* 18px visible above the title text and below the Sign in pill (Sean, Nov 21) */
+.limit { align-items: flex-start; } /* Sean's Figma (node 51:374): 12px padding all round */
+.limit-copy { display: flex; flex-direction: column; gap: 4px; } /* title + message 4px apart; 8px (.ask-body gap) to the buttons */
 .limit-text { margin: 0; font-size: 14px; line-height: 1.4; color: var(--muted); }
 
 /* Claimed: greyed out for friends (the person who marked it can still Undo) */
