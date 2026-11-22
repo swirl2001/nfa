@@ -312,6 +312,7 @@ function render(owner) {
   const boughtGrid = $("#bought");
   boughtGrid.textContent = "";
   bought.forEach((it) => boughtGrid.appendChild(card(tpl, it, owner)));
+  $("#boughtHead").textContent = isEdit ? "Received" : "Purchased";
   boughtGrid.hidden = $("#boughtHead").hidden = !bought.length;
 }
 
@@ -358,8 +359,9 @@ function card(tpl, it, owner) {
   more.setAttribute("aria-label", `More options for ${label}`);
   $(".del", node).setAttribute("aria-label", `Remove ${label}`);
   // Friends and family: "Mark as gifted" (Sean, Nov 21). The owner's own page keeps "Mark as purchased" (→ "✓ I own this").
-  $(".buy", node).textContent = isEdit ? "Mark as purchased" : "Mark as gifted";
-  $(".buy", node).setAttribute("aria-label", isEdit ? `Mark ${label} as purchased` : `Mark ${label} as gifted`);
+  // Owner's own page says "received" (Sean, Nov 21); friends and family say "gifted".
+  $(".buy", node).textContent = isEdit ? "Mark as received" : "Mark as gifted";
+  $(".buy", node).setAttribute("aria-label", isEdit ? `Mark ${label} as received` : `Mark ${label} as gifted`);
   $(".unbuy", node).setAttribute("aria-label", `I gifted ${label}. Click to undo.`);
   more.onclick = (e) => {
     e.stopPropagation();
