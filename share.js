@@ -1,5 +1,5 @@
 // NFA Wishlist share page.
-//   Friends:  ?list=<slug>                → view + one-click "Mark as purchased" (undo only from the same
+//   Friends:  ?list=<slug>                → view + one-click "Mark as gifted" (undo only from the same
 //                                            browser); hover ⋯ = Open in new tab / Copy link; after visiting a
 //                                            store page, coming back asks "Did you buy …?"
 //   Owner:    ?list=<slug>&edit=<token>   → same cards as the extension: 🗑 with Undo, ⋯ menu,
@@ -286,7 +286,7 @@ function renderHeader(owner) {
     ? "This is your private edit link. Don't share it. Use the share button to send friends and family their own link. What's been bought stays hidden from you."
     : owner
       ? "Don't spoil the surprise! This is your list, so what friends and family buy stays hidden from you."
-      : "Tap “Mark as purchased” when you get something, so nobody doubles up. The list owner never sees what's been bought.";
+      : "Tap “Mark as gifted” when you get something, so nobody doubles up. The list owner never sees what's been bought.";
   $("#shareBtn").hidden = !isEdit;
   $("#listMenuBtn").hidden = !isEdit;
   $("#intro").hidden = false;
@@ -356,7 +356,9 @@ function card(tpl, it, owner) {
   const more = $(".more", node);
   more.setAttribute("aria-label", `More options for ${label}`);
   $(".del", node).setAttribute("aria-label", `Remove ${label}`);
-  $(".buy", node).setAttribute("aria-label", `Mark ${label} as purchased`);
+  // Friends and family: "Mark as gifted" (Sean, Nov 21). The owner's own page keeps "Mark as purchased" (→ "✓ I own this").
+  $(".buy", node).textContent = isEdit ? "Mark as purchased" : "Mark as gifted";
+  $(".buy", node).setAttribute("aria-label", isEdit ? `Mark ${label} as purchased` : `Mark ${label} as gifted`);
   $(".unbuy", node).setAttribute("aria-label", `I gifted ${label}. Click to undo.`);
   more.onclick = (e) => {
     e.stopPropagation();
@@ -670,7 +672,7 @@ function downloadList() {
   toast("List downloaded.");
 }
 
-// ---------- friends: one-click "Mark as purchased" ----------
+// ---------- friends: one-click "Mark as gifted" ----------
 // No names. Marking returns a private token that only this browser keeps (localStorage), and only that
 // token can undo it. Lost tokens (cleared browser data, other phone) just mean that mark can't be undone here.
 
@@ -715,7 +717,7 @@ async function markPurchased(it) {
     if (token) {
       setMine(it.id, token);
       showClaimed(c.node, it, true);
-      toast("Marked as purchased.", () => unmarkPurchased(it));
+      toast("Marked as gifted.", () => unmarkPurchased(it));
     } else {
       showClaimed(c.node, it, false);
       toast("Someone already got this one.");
@@ -732,7 +734,7 @@ async function unmarkPurchased(it) {
   try {
     const ok = await rpc("unmark_purchased", { p_slug: slug, p_item_id: it.id, p_token: token });
     setMine(it.id, null);
-    if (ok) { showUnclaimed(c.node, it); toast("No longer marked as purchased."); }
+    if (ok) { showUnclaimed(c.node, it); toast("No longer marked as gifted."); }
     else { showClaimed(c.node, it, false); toast("Couldn't undo that one."); }
   } catch (e) {
     $(".unbuy", c.node).disabled = false;
