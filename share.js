@@ -303,7 +303,7 @@ function render(owner) {
   setState("");
   const tpl = $("#itemTpl");
   // Friends: what's still available stays on top; anything already bought moves to a
-  // "Purchased" section at the bottom. (Only on load: a fresh mark stays put so Undo is easy.)
+  // "Gifted" section at the bottom (owner's own page: "Received"). (Only on load: a fresh mark stays put so Undo is easy.)
   // Owner (edit link): things they marked "I own this" move down the same way. Never friends' marks.
   const friends = !isEdit && !owner;
   const bought = isEdit ? list.filter((it) => it.owned === true)
@@ -358,7 +358,7 @@ function card(tpl, it, owner) {
   const more = $(".more", node);
   more.setAttribute("aria-label", `More options for ${label}`);
   $(".del", node).setAttribute("aria-label", `Remove ${label}`);
-  // Friends and family: "Mark as gifted" (Sean, Nov 21). The owner's own page keeps "Mark as purchased" (→ "✓ I own this").
+  // Friends and family: "Mark as gifted" (Sean, Nov 21).
   // Owner's own page says "received" (Sean, Nov 21); friends and family say "gifted".
   $(".buy", node).textContent = isEdit ? "Mark as received" : "Mark as gifted";
   $(".buy", node).setAttribute("aria-label", isEdit ? `Mark ${label} as received` : `Mark ${label} as gifted`);
@@ -398,7 +398,7 @@ function card(tpl, it, owner) {
   return node;
 }
 
-// ---------- owner: "Mark as purchased" → "✓ I own this" (their own flag, separate from friends' marks) ----------
+// ---------- owner: "Mark as received" → "✓ Received" (their own flag, separate from friends' marks) ----------
 
 function wireOwned(node, it) {
   const buy = $(".buy", node), unbuy = $(".unbuy", node);

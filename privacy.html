@@ -50,7 +50,7 @@
 
     <h3>When friends and family view your list (website)</h3>
     <ul>
-      <li><b>Purchase marks:</b> when a friend or family member taps “Mark as gifted”, we store that the item was marked, with no name. Their browser keeps a private code so only that browser can undo it.</li>
+      <li><b>Gift marks:</b> when a friend or family member taps “Mark as gifted”, we store that the item was marked, with no name. Their browser keeps a private code so only that browser can undo it.</li>
       <li><b>Gift-mark limit:</b> to stop anyone with the link from marking everything as gifted, someone who isn't signed in can mark up to 3 items per list. To enforce this, each mark stores a scrambled (one-way hashed) version of a random code kept in their browser and of their network (IP) address. The hashes are different for every list and can't be turned back into the code or address; the network one is erased after a day. Signed-in people have no limit. The list owner never sees any of this.</li>
       <li>Friends and family don't need to sign in. If one of them chooses to sign in with Google, we receive the same details described above.</li>
       <li><b>Small notes in their own browser</b> (localStorage, not cookies): which items they marked, the last store page they opened from the list (so we can ask “Did you buy it?” when they come back; forgotten after 3 days), which lists' edit links were opened in that browser (so list owners don't see purchases), and the random code used for the gift-mark limit.</li>
@@ -64,11 +64,11 @@
     </ul>
 
     <h2>How we use it</h2>
-    <p>Only to run NFA: to save and sync your list, show it to the people you share it with, keep purchases hidden from you, and keep the service secure. We don't sell your information, use it for advertising, or share it with anyone except the service providers below.</p>
+    <p>Only to run NFA: to save and sync your list, show it to the people you share it with, keep what's been gifted hidden from you, and keep the service secure. We don't sell your information, use it for advertising, or share it with anyone except the service providers below.</p>
 
     <h2>Who else handles it</h2>
     <ul>
-      <li><b>Supabase</b> stores lists, items, purchase marks and Google sign-in details (servers in the United States).</li>
+      <li><b>Supabase</b> stores lists, items, gift marks and Google sign-in details (servers in the United States).</li>
       <li><b>Google</b> handles “Sign in with Google”, under Google's own privacy policy.</li>
       <li><b>Cloudflare</b> hosts the website nfawishlist.com.</li>
       <li><b>GitHub</b> hosts an older copy of the website (swirl2001.github.io/nfa) during our move to nfawishlist.com.</li>
@@ -96,7 +96,7 @@
       <li>We keep your list until you delete it. Deleting an item removes it from our servers.</li>
       <li>Signing out removes your sign-in from that browser or the extension. Your list stays in your account.</li>
       <li>To delete your whole list and account (including Google sign-in details), email us (below) with your list's link and we'll delete everything within 30 days. Uninstalling the extension removes the copy on your computer, but not the list on our servers.</li>
-      <li>Friends and family can clear their purchase codes and notes by clearing site data for nfawishlist.com in their browser.</li>
+      <li>Friends and family can clear their gift-mark codes and notes by clearing site data for nfawishlist.com in their browser.</li>
     </ul>
 
     <h2>Children</h2>
