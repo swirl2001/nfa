@@ -515,9 +515,6 @@ select:disabled { opacity: .55; cursor: default; }
 .gate-title { font-size: 18px; font-weight: 700; line-height: 1.22; color: var(--ink); margin-bottom: 16px !important; }
 .gate-body { font-size: 14px; line-height: 20px; color: var(--muted); }
 .gate .gate-actions { margin-top: 24px; }
-@keyframes nfa-pulse { 0%, 100% { box-shadow: 0 3px 12px rgba(0, 0, 0, .2); } 35% { box-shadow: 0 0 0 3px var(--ink), 0 3px 12px rgba(0, 0, 0, .2); } }
-.gate.pulse { animation: nfa-pulse .9s ease-in-out 2; }
-@media (prefers-reduced-motion: reduce) { .gate.pulse { animation: none; box-shadow: 0 0 0 3px var(--ink), 0 3px 12px rgba(0, 0, 0, .2); } }
 
 /* Owner details form: placeholders light grey but readable (--placeholder is ≥4.5:1), public-address note */
 .details-form textarea::placeholder, .details-form input::placeholder { color: var(--placeholder); opacity: 1; }
@@ -533,3 +530,10 @@ select:disabled { opacity: .55; cursor: default; }
 .note-remove { flex: none; width: 28px; height: 28px; margin-top: -2px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--muted); }
 .note-remove:hover { background: var(--hover); color: var(--ink); }
 .note-remove:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+/* Spotlight: Share while the owner isn't signed in darkens everything except the sign-in card.
+   The scrim lives inside the sticky header (its own layer), so the card can sit above it. */
+.scrim { position: fixed; inset: 0; z-index: 3; background: rgba(0, 0, 0, .75); opacity: 0; transition: opacity .2s; }
+.scrim.on { opacity: 1; }
+.gate.spot { position: relative; z-index: 4; }
+@media (prefers-reduced-motion: reduce) { .scrim { transition: none; } }

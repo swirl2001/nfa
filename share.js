@@ -660,15 +660,32 @@ $("#items").addEventListener("dragover", (e) => {
 $("#items").addEventListener("drop", (e) => { if (dragged) e.preventDefault(); });
 
 // ---------- sign in to share (owner page, owner not signed in yet) ----------
-function pulseGate() {
-  const g = $("#shareGate");
-  g.classList.remove("pulse"); void g.offsetWidth; g.classList.add("pulse");
-  $("#gateSignIn").focus({ preventScroll: false });
+// Spotlight (Sean, Nov 22): everything else goes 75% dark so only the sign-in card stands out.
+// Click the dark area or press Escape to go back.
+function spotlight(card, scrim, focusEl) {
+  const off = () => {
+    card.classList.remove("spot"); scrim.classList.remove("on");
+    setTimeout(() => { if (!scrim.classList.contains("on")) scrim.hidden = true; }, 200);
+    document.removeEventListener("keydown", onKey, true);
+  };
+  const onKey = (e) => { if (e.key === "Escape") { e.preventDefault(); off(); } };
+  scrim.hidden = false;
+  void scrim.offsetWidth;
+  scrim.classList.add("on");
+  card.classList.add("spot");
+  scrim.onclick = off;
+  document.addEventListener("keydown", onKey, true);
+  if (focusEl) focusEl.focus({ preventScroll: false });
+  card.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  return off;
 }
+let gateSpotOff = null;
+function pulseGate() { gateSpotOff = spotlight($("#shareGate"), $("#gateScrim"), $("#gateSignIn")); }
 const SHARE_AFTER = "nfa-share-after-signin"; // sessionStorage: slug to share once the reload shows it signed in
 // The owner page usually comes from the extension, so sign in there: Google gets linked to the same
 // list and share link. (Signing in on the website alone would be a different, empty account.)
 $("#gateSignIn").onclick = async () => {
+  if (gateSpotOff) { gateSpotOff(); gateSpotOff = null; }
   const ids = NFA_CONFIG.extensionIds || [];
   const rt = window.chrome && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime : null;
   const btn = $("#gateSignIn");
