@@ -183,7 +183,15 @@ window.addEventListener("scroll", () => {
 
 // ---------- load ----------
 
-function setState(msg) { const s = $("#state"); s.textContent = msg || ""; s.hidden = !msg; }
+function setState(msg, empty = false) {
+  const s = $("#state");
+  s.textContent = msg || "";
+  s.classList.toggle("empty", empty);
+  s.hidden = !msg;
+}
+function showEmptyList() {
+  setState(isEdit ? "Your list is empty. Save things with the NFA Wishlist extension." : "Nothing on this list yet.", true);
+}
 
 async function load() {
   const authMsg = await NFAAuth.finishRedirect(); // back from Google's sign-in page?
@@ -345,7 +353,7 @@ function render(owner) {
   const grid = $("#items");
   grid.textContent = "";
   const list = isEdit ? [...items].sort(byPosition) : items;
-  if (!list.length) { setState(isEdit ? "Your list is empty. Save things with the NFA Wishlist extension." : "Nothing on this list yet."); return; }
+  if (!list.length) { showEmptyList(); return; }
   setState("");
   const tpl = $("#itemTpl");
   // Friends: what's still available stays on top; anything already bought moves to a
@@ -485,7 +493,7 @@ async function removeItem(it, node) {
     const row = await ownerRpc("owner_delete_item", { p_item_id: it.id });
     items = items.filter((x) => x.id !== it.id);
     node.remove();
-    if (!items.length) setState("Your list is empty. Save things with the NFA Wishlist extension.");
+    if (!items.length) showEmptyList();
     if (row) toast("Item removed", async () => {
       try {
         await ownerRpc("owner_restore_item", { p_item: row });
@@ -1312,7 +1320,7 @@ function closeNewItem() {
   const n = $("#newItem");
   if (n) n.remove();
   newItemPhoto = null;
-  if (!items.length) setState("Your list is empty. Save things with the NFA Wishlist extension.");
+  if (!items.length) showEmptyList();
   $("#listMenuBtn").focus();
 }
 
