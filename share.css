@@ -508,3 +508,13 @@ select:disabled { opacity: .55; cursor: default; }
 .title-editable:hover { background: var(--hover); }
 .title-editable:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
 .title-editable.editing { background: var(--card); box-shadow: 0 0 0 2px var(--ink); }
+
+/* Sign in to share (owner page, owner not signed in yet). Same card as the extension (Figma "Extension cards"). */
+.gate { margin-top: 16px; max-width: 460px; padding: 24px; background: var(--card); border-radius: 20px; box-shadow: 0 3px 12px rgba(0, 0, 0, .2); }
+.gate p { margin: 0; }
+.gate-title { font-size: 18px; font-weight: 700; line-height: 1.22; color: var(--ink); margin-bottom: 16px !important; }
+.gate-body { font-size: 14px; line-height: 20px; color: var(--muted); }
+.gate .gate-actions { margin-top: 24px; }
+@keyframes nfa-pulse { 0%, 100% { box-shadow: 0 3px 12px rgba(0, 0, 0, .2); } 35% { box-shadow: 0 0 0 3px var(--ink), 0 3px 12px rgba(0, 0, 0, .2); } }
+.gate.pulse { animation: nfa-pulse .9s ease-in-out 2; }
+@media (prefers-reduced-motion: reduce) { .gate.pulse { animation: none; box-shadow: 0 0 0 3px var(--ink), 0 3px 12px rgba(0, 0, 0, .2); } }

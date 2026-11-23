@@ -14,6 +14,7 @@ if (location.hostname === "www.nfawishlist.com") location.replace("https://nfawi
 const $ = (s, el = document) => el.querySelector(s);
 // Read from the address bar in readParams() (again after a Google sign-in returns here).
 let params, slug, editToken, isEdit, viewOnlyOwner;
+let ownerSignedIn = true;  // false: this list's owner hasn't signed in with Google, so it can't be shared yet (migration 011)
 let signedInOwner = false; // signed in with Google and this is their list: edit mode, token kept in memory only
 function readParams() {
   params = new URLSearchParams(location.search);
@@ -213,6 +214,7 @@ async function load() {
     return;
   }
   if (isEdit) rememberMyList(slug); // this browser now knows the list is yours
+  if (isEdit && data.owner_signed_in === false) ownerSignedIn = false;
   const owner = isEdit || viewOnlyOwner || ownsHere || data.is_owner === true;
   document.body.classList.add(isEdit ? "owner" : owner ? "owner-view" : "friend");
   listTitle = data.title;
@@ -221,6 +223,7 @@ async function load() {
   render(owner);
   loadDetails(); // note + shipping address (each optional)
   resumePendingMark();
+  resumeShareAfterSignIn();
   maybeAsk();
 }
 
@@ -332,6 +335,7 @@ function renderHeader(owner) {
       : "Tap “Mark as gifted” when you get something, so nobody doubles up. The list owner never sees what's been bought.";
   $("#shareBtn").hidden = !isEdit;
   $("#listMenuBtn").hidden = !isEdit;
+  $("#shareGate").hidden = !(isEdit && !ownerSignedIn);
   $("#intro").hidden = false;
 }
 
@@ -655,10 +659,57 @@ $("#items").addEventListener("dragover", (e) => {
 });
 $("#items").addEventListener("drop", (e) => { if (dragged) e.preventDefault(); });
 
+// ---------- sign in to share (owner page, owner not signed in yet) ----------
+function pulseGate() {
+  const g = $("#shareGate");
+  g.classList.remove("pulse"); void g.offsetWidth; g.classList.add("pulse");
+  $("#gateSignIn").focus({ preventScroll: false });
+}
+const SHARE_AFTER = "nfa-share-after-signin"; // sessionStorage: slug to share once the reload shows it signed in
+// The owner page usually comes from the extension, so sign in there: Google gets linked to the same
+// list and share link. (Signing in on the website alone would be a different, empty account.)
+$("#gateSignIn").onclick = async () => {
+  const ids = NFA_CONFIG.extensionIds || [];
+  const rt = window.chrome && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime : null;
+  const btn = $("#gateSignIn");
+  if (!rt || !ids.length) { toast("Open the NFA Wishlist extension and sign in with Google there."); return; }
+  btn.disabled = true;
+  toast("Finish signing in in the Google window.");
+  let res = null;
+  for (const id of ids) {
+    res = await new Promise((resolve) => {
+      try { rt.sendMessage(id, { type: "nfa-sign-in", slug }, (r) => { void chrome.runtime.lastError; resolve(r || null); }); }
+      catch (e) { resolve(null); }
+    });
+    if (res && res.status !== "not-mine") break;
+  }
+  btn.disabled = false;
+  if (res && res.status === "signed-in") {
+    try { sessionStorage.setItem(SHARE_AFTER, slug); } catch (e) {}
+    location.reload();
+  } else if (res && res.status === "merge") {
+    toast("Almost done: open the NFA Wishlist extension to finish signing in.");
+  } else if (res && res.status === "error") {
+    toast(/cancel/i.test(res.message || "") ? "Sign-in cancelled." : "Sign-in didn't work. Try again.");
+  } else {
+    toast("Open the NFA Wishlist extension and sign in with Google there.");
+  }
+};
+// Back after signing in from the card: create the link right away (as if Share was tapped).
+async function resumeShareAfterSignIn() {
+  let s = null;
+  try { s = sessionStorage.getItem(SHARE_AFTER); sessionStorage.removeItem(SHARE_AFTER); } catch (e) {}
+  if (!s || s !== slug || !isEdit || !ownerSignedIn) return;
+  const url = friendsUrl();
+  const ok = await copyQuiet(url);
+  toast(ok ? "Link copied." : "Here's your link.", null, { sticky: true, url });
+}
+
 // ---------- owner header: share + ⋯ (Rename, Copy list, Download list) ----------
 
 // Share: copy the friends link and keep it on screen (until closed) to copy again or select by hand.
 $("#shareBtn").onclick = async () => {
+  if (isEdit && !ownerSignedIn) { pulseGate(); return; }
   const url = friendsUrl();
   const ok = await copyQuiet(url);
   toast(ok ? "Link copied." : "Here's your link.", null, { sticky: true, url });
