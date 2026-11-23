@@ -685,6 +685,7 @@ const SHARE_AFTER = "nfa-share-after-signin"; // sessionStorage: slug to share o
 // The owner page usually comes from the extension, so sign in there: Google gets linked to the same
 // list and share link. (Signing in on the website alone would be a different, empty account.)
 $("#gateSignIn").onclick = async () => {
+  const fromShare = $("#shareGate").classList.contains("spot");
   if (gateSpotOff) { gateSpotOff(); gateSpotOff = null; }
   const ids = NFA_CONFIG.extensionIds || [];
   const rt = window.chrome && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime : null;
@@ -702,7 +703,9 @@ $("#gateSignIn").onclick = async () => {
   }
   btn.disabled = false;
   if (res && res.status === "signed-in") {
-    try { sessionStorage.setItem(SHARE_AFTER, slug); } catch (e) {}
+    if (fromShare) {
+      try { sessionStorage.setItem(SHARE_AFTER, slug); } catch (e) {}
+    }
     location.reload();
   } else if (res && res.status === "merge") {
     toast("Almost done: open the NFA Wishlist extension to finish signing in.");
@@ -712,7 +715,7 @@ $("#gateSignIn").onclick = async () => {
     toast("Open the NFA Wishlist extension and sign in with Google there.");
   }
 };
-// Back after signing in from the card: create the link right away (as if Share was tapped).
+// After a Share-initiated sign-in, copy the friends and family link.
 async function resumeShareAfterSignIn() {
   let s = null;
   try { s = sessionStorage.getItem(SHARE_AFTER); sessionStorage.removeItem(SHARE_AFTER); } catch (e) {}
