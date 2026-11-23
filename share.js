@@ -984,14 +984,19 @@ async function loadDetails() {
   try { details = isEdit ? await ownerRpc("owner_details", {}) : await rpc("list_details", { p_slug: slug }); }
   catch (e) { details = null; } // not set up on the server yet: simply no note or address
   renderDetails();
+  // Owner's first visit to this list with nothing filled in: open the note / address form (Sean, Nov 22).
+  const d = details || {};
+  if (isEdit && details && !d.note && !d.address && !d.recipient_name) {
+    let seen = false;
+    try { seen = localStorage.getItem(firstVisitKey()) === "1"; localStorage.setItem(firstVisitKey(), "1"); } catch (e) { seen = true; }
+    if (!seen) openDetails({ focus: false });
+  }
 }
 
 // ---------- owner: note in place (Sean, Nov 22) ----------
-// Click the note (or its prompt) under the title to write it; Return saves, Shift+Return adds a line,
-// Escape cancels. The ✕ removes the note (with Undo), or hides the empty prompt (⋯ → Add note / address still works).
-const NOTE_PROMPT = "Add a note to your friends and family, or a date, like \u201cMy birthday is December 10!\u201d";
-const noteDismissKey = () => `nfa-note-prompt-hidden:${slug}`;
-const noteDismissed = () => { try { return localStorage.getItem(noteDismissKey()) === "1"; } catch (e) { return false; } };
+// An existing note is editable right under the intro: click to edit, Return saves, Shift+Return adds a
+// line, Escape cancels, ✕ removes it (with Undo). No note: nothing shows (the form opens on first visit).
+const firstVisitKey = () => `nfa-details-opened:${slug}`;
 async function saveNote(text) {
   const d = details || {};
   const ok = await ownerRpc("owner_set_details", {
@@ -1008,7 +1013,6 @@ function wireNoteEdit() {
   noteWired = true;
   const el = $("#noteText");
   el.classList.add("note-editable");
-  el.dataset.placeholder = NOTE_PROMPT;
   el.tabIndex = 0;
   el.setAttribute("role", "textbox");
   el.setAttribute("aria-label", "Note for friends and family");
@@ -1044,14 +1048,9 @@ function wireNoteEdit() {
   el.addEventListener("blur", () => finish(true));
   $("#noteRemove").onclick = async () => {
     const had = (details && details.note) || "";
-    if (had) {
-      try { await saveNote(""); renderDetails(); toast("Note removed.", () => restoreNote(had)); }
-      catch (e) { toast("Couldn't remove the note. Try again."); }
-    } else {
-      try { localStorage.setItem(noteDismissKey(), "1"); } catch (e) {}
-      renderDetails();
-      toast("Hidden. Add a note any time from ⋯ → Add note / address.", () => { try { localStorage.removeItem(noteDismissKey()); } catch (e) {} renderDetails(); });
-    }
+    if (!had) return;
+    try { await saveNote(""); renderDetails(); toast("Note removed.", () => restoreNote(had)); }
+    catch (e) { toast("Couldn't remove the note. Try again."); }
   };
 }
 async function restoreNote(text) {
@@ -1074,12 +1073,10 @@ function renderDetails() {
 
   // Owner: the note is editable right here; empty shows the prompt (unless they hid it). Friends: just the note.
   const ownerNote = isEdit && ownerData;
-  const promptHidden = ownerNote && !note && noteDismissed();
   if (!$("#noteText").isContentEditable) $("#noteText").textContent = ownerNote ? note : (noteShown ? note : "");
-  $("#noteRow").hidden = editing || (ownerNote ? promptHidden : !noteShown);
-  $("#noteRemove").hidden = !ownerNote;
-  const rmLabel = note ? "Remove note" : "Hide this prompt";
-  $("#noteRemove").setAttribute("aria-label", rmLabel); $("#noteRemove").title = rmLabel;
+  $("#noteRow").hidden = editing || (ownerNote ? !note : !noteShown);
+  $("#noteRemove").hidden = !ownerNote || !note;
+  $("#noteRemove").setAttribute("aria-label", "Remove note"); $("#noteRemove").title = "Remove note";
   if (ownerNote) wireNoteEdit();
 
   const ship = $("#ship");
@@ -1128,7 +1125,7 @@ function setAddrOpen(open) {
   $("#addrToggle").setAttribute("aria-expanded", String(open));
   $("#addrToggle").classList.toggle("open", open);
 }
-function openDetails() {
+function openDetails({ focus = true } = {}) {
   const d = details || {};
   $("#noteInput").value = d.note || "";
   radio("noteVis", d.note_visibility || "public");
@@ -1142,7 +1139,7 @@ function openDetails() {
   setAddrOpen(false); // closed until the owner opens it
   $("#detailsForm").hidden = false;
   renderDetails();
-  $("#noteInput").focus();
+  if (focus) $("#noteInput").focus();
 }
 function closeDetails() {
   $("#detailsForm").hidden = true;

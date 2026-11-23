@@ -530,7 +530,6 @@ select:disabled { opacity: .55; cursor: default; }
 .note-editable:hover { background: var(--hover); }
 .note-editable:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
 .note-editable.editing { background: var(--card); box-shadow: 0 0 0 2px var(--ink); }
-.note-editable:empty::before { content: attr(data-placeholder); color: var(--placeholder); }
 .note-remove { flex: none; width: 28px; height: 28px; margin-top: -2px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--muted); }
 .note-remove:hover { background: var(--hover); color: var(--ink); }
 .note-remove:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
