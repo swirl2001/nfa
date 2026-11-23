@@ -11,7 +11,7 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self'; style-src 'self'; img-src https: data: 'self'; connect-src https://tpwsbimymlyjcotkvrqd.supabase.co; base-uri 'none'; form-action 'none'" />
   <link rel="icon" href="raven.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="share.css?v=202611221705" />
+  <link rel="stylesheet" href="share.css?v=202611221707" />
 </head>
 <body>
   <header id="head" class="head">
@@ -104,7 +104,7 @@
       <form id="detailsForm" class="details-form" hidden>
         <div class="edit-block">
           <label for="noteInput" class="edit-h">Note for friends and family <span class="opt">(optional)</span></label>
-          <textarea id="noteInput" rows="2" maxlength="500" placeholder="Sizes, favorite colors, what you don't need…"></textarea>
+          <textarea id="noteInput" rows="2" maxlength="500" placeholder="Add a note to your friends and family, or a date, like &quot;My birthday is December 10!&quot;"></textarea>
           <fieldset class="vis">
             <legend class="sr-only">Who can see the note</legend>
             <label><input type="radio" name="noteVis" value="public" checked /> Anyone with the link</label>
@@ -119,13 +119,14 @@
             <svg class="chev" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
           </button>
           <div id="addrPanel" class="addr-panel" hidden>
+            <p class="addr-public">This address is public. Anyone signed in with this link will be able to see it. Private lists coming soon!</p>
             <div class="new-field">
               <label for="recipientInput">Recipient name</label>
               <input id="recipientInput" type="text" maxlength="100" autocomplete="name" placeholder="First and last name" />
             </div>
             <div class="new-field">
               <label for="addrInput">Address</label>
-              <textarea id="addrInput" rows="3" maxlength="400" autocomplete="street-address" placeholder="Street, apartment&#10;City, state, ZIP"></textarea>
+              <textarea id="addrInput" rows="3" maxlength="400" autocomplete="street-address" placeholder="Add an address: street and apartment&#10;City, state, ZIP"></textarea>
             </div>
             <div class="new-field">
               <label for="deliveryInput">Delivery notes <span class="opt">(optional)</span></label>
@@ -253,10 +254,10 @@
     </article>
   </template>
 
-  <script src="config.js?v=202611221705"></script>
-  <script src="amazon.js?v=202611221705"></script>
-  <script src="price.js?v=202611221705"></script>
-  <script src="auth.js?v=202611221705"></script>
-  <script src="share.js?v=202611221705"></script>
+  <script src="config.js?v=202611221707"></script>
+  <script src="amazon.js?v=202611221707"></script>
+  <script src="price.js?v=202611221707"></script>
+  <script src="auth.js?v=202611221707"></script>
+  <script src="share.js?v=202611221707"></script>
 </body>
 </html>
