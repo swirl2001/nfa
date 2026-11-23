@@ -1056,7 +1056,6 @@ function openDetails() {
   $("#recipientInput").value = d.recipient_name || "";
   $("#addrInput").value = d.address || "";
   $("#deliveryInput").value = d.delivery_notes || "";
-  radio("addrVis", d.address_visibility || "signed_in");
   const lbl = $("#addrToggleLabel");
   lbl.textContent = "";
   if (d.address || d.recipient_name) lbl.append("Shipping address");
@@ -1095,7 +1094,7 @@ $("#detailsForm").onsubmit = async (e) => {
     recipient_name: $("#recipientInput").value.replace(/\s+/g, " ").trim().slice(0, 100),
     address: $("#addrInput").value.trim().slice(0, 400),
     delivery_notes: $("#deliveryInput").value.replace(/\s+/g, " ").trim().slice(0, 300),
-    address_visibility: radioValue("addrVis") || "signed_in",
+    address_visibility: "signed_in", // always: anyone who signs in (Sean, Nov 22; "Private lists coming soon!")
   };
   try {
     const ok = await ownerRpc("owner_set_details", {
