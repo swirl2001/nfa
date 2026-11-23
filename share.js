@@ -986,6 +986,78 @@ async function loadDetails() {
   renderDetails();
 }
 
+// ---------- owner: note in place (Sean, Nov 22) ----------
+// Click the note (or its prompt) under the title to write it; Return saves, Shift+Return adds a line,
+// Escape cancels. The ✕ removes the note (with Undo), or hides the empty prompt (⋯ → Add note / address still works).
+const NOTE_PROMPT = "Add a note to your friends and family, or a date, like \u201cMy birthday is December 10!\u201d";
+const noteDismissKey = () => `nfa-note-prompt-hidden:${slug}`;
+const noteDismissed = () => { try { return localStorage.getItem(noteDismissKey()) === "1"; } catch (e) { return false; } };
+async function saveNote(text) {
+  const d = details || {};
+  const ok = await ownerRpc("owner_set_details", {
+    p_note: text, p_note_visibility: d.note_visibility || "public",
+    p_recipient_name: d.recipient_name || "", p_address: d.address || "",
+    p_delivery_notes: d.delivery_notes || "", p_address_visibility: d.address_visibility || "signed_in",
+  });
+  if (!ok) throw new Error("not saved");
+  details = { ...d, note: text || null, note_visibility: d.note_visibility || "public" };
+}
+let noteWired = false;
+function wireNoteEdit() {
+  if (noteWired) return;
+  noteWired = true;
+  const el = $("#noteText");
+  el.classList.add("note-editable");
+  el.dataset.placeholder = NOTE_PROMPT;
+  el.tabIndex = 0;
+  el.setAttribute("role", "textbox");
+  el.setAttribute("aria-label", "Note for friends and family");
+  el.title = "Click to edit";
+  let before = "";
+  const start = () => {
+    if (el.isContentEditable) return;
+    before = (details && details.note) || "";
+    el.contentEditable = "plaintext-only";
+    el.classList.add("editing");
+    el.focus();
+    const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  };
+  const finish = async (keep) => {
+    if (!el.isContentEditable) return;
+    el.contentEditable = "false";
+    el.classList.remove("editing");
+    const text = el.innerText.replace(/\n{3,}/g, "\n\n").trim().slice(0, 500);
+    if (!keep || text === before) { el.textContent = before; return; }
+    el.textContent = text;
+    try { await saveNote(text); toast(text ? "Note saved." : "Note removed.", text ? null : () => restoreNote(before)); }
+    catch (e) { el.textContent = before; toast("Couldn't save the note. Try again."); }
+    renderDetails();
+  };
+  el.addEventListener("click", start);
+  el.addEventListener("keydown", (e) => {
+    if (!el.isContentEditable) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); start(); } return; }
+    if (e.isComposing) return;
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); el.blur(); }
+    else if (e.key === "Escape") { e.preventDefault(); finish(false); el.focus(); }
+  });
+  el.addEventListener("blur", () => finish(true));
+  $("#noteRemove").onclick = async () => {
+    const had = (details && details.note) || "";
+    if (had) {
+      try { await saveNote(""); renderDetails(); toast("Note removed.", () => restoreNote(had)); }
+      catch (e) { toast("Couldn't remove the note. Try again."); }
+    } else {
+      try { localStorage.setItem(noteDismissKey(), "1"); } catch (e) {}
+      renderDetails();
+      toast("Hidden. Add a note any time from ⋯ → Add note / address.", () => { try { localStorage.removeItem(noteDismissKey()); } catch (e) {} renderDetails(); });
+    }
+  };
+}
+async function restoreNote(text) {
+  try { await saveNote(text); renderDetails(); } catch (e) { toast("Couldn't restore the note."); }
+}
+
 // What shows under the title. The owner sees what friends could see (not "Don't show it" ones).
 function renderDetails() {
   const d = details || {};
@@ -1000,8 +1072,15 @@ function renderDetails() {
   const copyAll = [addr, dnotes && `Delivery notes: ${dnotes}`].filter(Boolean).join("\n");
   const locked = !addrShown && d.address_locked === true;
 
-  $("#noteText").textContent = noteShown ? note : "";
-  $("#noteText").hidden = editing || !noteShown;
+  // Owner: the note is editable right here; empty shows the prompt (unless they hid it). Friends: just the note.
+  const ownerNote = isEdit && ownerData;
+  const promptHidden = ownerNote && !note && noteDismissed();
+  if (!$("#noteText").isContentEditable) $("#noteText").textContent = ownerNote ? note : (noteShown ? note : "");
+  $("#noteRow").hidden = editing || (ownerNote ? promptHidden : !noteShown);
+  $("#noteRemove").hidden = !ownerNote;
+  const rmLabel = note ? "Remove note" : "Hide this prompt";
+  $("#noteRemove").setAttribute("aria-label", rmLabel); $("#noteRemove").title = rmLabel;
+  if (ownerNote) wireNoteEdit();
 
   const ship = $("#ship");
   ship.hidden = editing || !(addrShown || locked);
@@ -1029,7 +1108,7 @@ function renderDetails() {
     try { reopen = sessionStorage.getItem(SHIP_OPEN) === "1" && addrShown; if (reopen) sessionStorage.removeItem(SHIP_OPEN); } catch (e) {}
     setShipOpen(reopen || isShipOpen()); // closed by default; stays as the viewer left it
   }
-  $("#details").hidden = $("#noteText").hidden && ship.hidden && !editing;
+  $("#details").hidden = $("#noteRow").hidden && ship.hidden && !editing;
 }
 const isShipOpen = () => $("#shipToggle").getAttribute("aria-expanded") === "true";
 function setShipOpen(open) {

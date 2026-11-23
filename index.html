@@ -11,7 +11,7 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self'; style-src 'self'; img-src https: data: 'self'; connect-src https://tpwsbimymlyjcotkvrqd.supabase.co; base-uri 'none'; form-action 'none'" />
   <link rel="icon" href="raven.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="share.css?v=202611221713" />
+  <link rel="stylesheet" href="share.css?v=202611221717" />
 </head>
 <body>
   <header id="head" class="head">
@@ -85,7 +85,11 @@
     </article>
     <!-- Note (under the title) and shipping address (dropdown). Both optional; filled by share.js. -->
     <section id="details" class="details" aria-label="Note and shipping address" hidden>
-      <p id="noteText" class="note-text" hidden></p>
+      <div id="noteRow" class="note-row" hidden>
+        <p id="noteText" class="note-text"></p>
+        <!-- Owner only: remove the note, or hide the empty prompt -->
+        <button id="noteRemove" class="note-remove" type="button" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
       <div id="ship" class="ship" hidden>
         <div class="ship-row">
           <button id="shipToggle" class="ship-toggle" type="button" aria-expanded="false" aria-controls="shipBody">
@@ -248,10 +252,10 @@
     </article>
   </template>
 
-  <script src="config.js?v=202611221713"></script>
-  <script src="amazon.js?v=202611221713"></script>
-  <script src="price.js?v=202611221713"></script>
-  <script src="auth.js?v=202611221713"></script>
-  <script src="share.js?v=202611221713"></script>
+  <script src="config.js?v=202611221717"></script>
+  <script src="amazon.js?v=202611221717"></script>
+  <script src="price.js?v=202611221717"></script>
+  <script src="auth.js?v=202611221717"></script>
+  <script src="share.js?v=202611221717"></script>
 </body>
 </html>
