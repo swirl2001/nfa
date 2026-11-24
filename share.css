@@ -144,7 +144,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 .card.dragging .overlay { opacity: 0; }
 .ov-btn {
-  width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; padding: 0;
+  width: 36px; height: 36px; flex: none; display: grid; place-items: center; border: 0; border-radius: 50%; padding: 0;
   background: rgba(40, 36, 32, .72); color: #fff; cursor: pointer;
 }
 .ov-btn:hover, .ov-btn[aria-expanded="true"] { background: rgba(40, 36, 32, .9); }
