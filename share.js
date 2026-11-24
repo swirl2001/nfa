@@ -215,7 +215,7 @@ async function load() {
     if (mine && mine.token) { editToken = mine.token; isEdit = true; signedInOwner = true; }
   }
   // Owner's Preview & manage: render exactly what friends and family see; owner_* calls still use the token.
-  if (isEdit && params.get("preview") === "1") { preview = true; isEdit = false; }
+  if (isEdit && params.get("preview") === "1") { preview = true; isEdit = false; renderAccount(); }
   if (!/^[A-Za-z0-9_-]{6,64}$/.test(slug)) { setState("This link is missing its list code. Ask for the link again."); return; }
   let data, ownsHere = false;
   try {
@@ -284,10 +284,10 @@ function renderAccount() {
   const box = $("#account");
   box.textContent = "";
   const u = NFAAuth.user();
-  if (!u) {
+  if (!u || preview) { // preview: show what friends and family see (signed out), without signing you out
     const b = document.createElement("button");
     b.type = "button"; b.className = "text-link"; b.textContent = "Sign in";
-    b.onclick = () => NFAAuth.signIn();
+    b.onclick = () => (preview ? toast("This is a preview. Friends and family see a Sign in link here.") : NFAAuth.signIn());
     box.append(b);
     return;
   }
@@ -351,7 +351,9 @@ function renderHeader(owner) {
   document.title = `${listTitle} · NFA Wishlist`;
   if (!$("#title").isContentEditable) $("#title").textContent = listTitle;
   wireTitleEdit();
-  $("#explainer").textContent = signedInOwner
+  $("#explainer").textContent = preview // owner's Preview & manage: exactly what friends and family read
+    ? "Tap “Mark as gifted” when you get something, so nobody doubles up. The list owner won't see it unless they choose to peek."
+    : signedInOwner
     ? "This is your list. Edit it here, and use the share button to copy the link for friends and family. What's been gifted stays hidden unless you peek (⋯ → Preview & manage)."
     : isEdit
     ? "This is your private edit link. Don't share it. Use the share button to send friends and family their own link. What's been gifted stays hidden unless you peek (⋯ → Preview & manage)."
@@ -1236,7 +1238,8 @@ function setIcon(el, svgText) { // our own constant SVG, parsed as SVG (no page 
 }
 
 async function loadDetails() {
-  try { details = isEdit ? await ownerRpc("owner_details", {}) : await rpc("list_details", { p_slug: slug }); }
+  // Preview: ask as a signed-out guest, so the note and address show exactly as friends and family see them.
+  try { details = isEdit ? await ownerRpc("owner_details", {}) : await rpc("list_details", { p_slug: slug }, preview); }
   catch (e) { details = null; } // not set up on the server yet: simply no note or address
   renderDetails();
   // Owner's first visit to this list with nothing filled in: open the note / address form (Sean, Nov 22).
@@ -1353,7 +1356,7 @@ function renderDetails() {
       p.textContent = "This address is shared with anyone who signs in.";
       const b = document.createElement("button");
       b.type = "button"; b.className = "text-link"; b.textContent = "Sign in with Google to see it";
-      b.onclick = () => { try { sessionStorage.setItem(SHIP_OPEN, "1"); } catch (e) {} NFAAuth.signIn(); };
+      b.onclick = () => { if (preview) { toast("This is a preview. Friends and family sign in here to see your address."); return; } try { sessionStorage.setItem(SHIP_OPEN, "1"); } catch (e) {} NFAAuth.signIn(); };
       body.append(p, b);
     }
     let reopen = false;
