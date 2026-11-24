@@ -238,7 +238,10 @@ async function load() {
   renderHeader(owner);
   items = Array.isArray(data.items) ? data.items : [];
   // Preview starts with gifts hidden: only the owner's own marks from this browser show as gifted.
-  if (preview) items.forEach((it) => { it.claimed = !!mine()[it.id]; });
+  if (preview) {
+    items = items.filter((it) => !it.hidden); // hidden items never reach friends and family
+    items.forEach((it) => { it.claimed = !!mine()[it.id]; });
+  }
   render(owner);
   if (preview) setupPreview();
   loadDetails(); // note + shipping address (each optional)
@@ -372,9 +375,15 @@ function render(owner) {
   // "Gifted" section at the bottom (owner's own page: "Received"). (Only on load: a fresh mark stays put so Undo is easy.)
   // Owner (edit link): things they marked "I own this" move down the same way. Never friends' marks.
   const friends = !isEdit && !owner;
-  const bought = isEdit ? list.filter((it) => it.owned === true)
+  // Owner: items hidden from the share link get their own "Hidden" section, above "Received".
+  const hiddenOnes = isEdit ? list.filter((it) => it.hidden === true) : [];
+  const bought = isEdit ? list.filter((it) => it.owned === true && !hiddenOnes.includes(it))
     : friends ? list.filter((it) => it.claimed === true) : [];
-  list.filter((it) => !bought.includes(it)).forEach((it) => grid.appendChild(card(tpl, it, owner)));
+  list.filter((it) => !bought.includes(it) && !hiddenOnes.includes(it)).forEach((it) => grid.appendChild(card(tpl, it, owner)));
+  const hiddenGrid = $("#hiddenGrid");
+  hiddenGrid.textContent = "";
+  hiddenOnes.forEach((it) => hiddenGrid.appendChild(card(tpl, it, owner)));
+  hiddenGrid.hidden = $("#hiddenRow").hidden = !hiddenOnes.length;
   const boughtGrid = $("#bought");
   boughtGrid.textContent = "";
   bought.forEach((it) => boughtGrid.appendChild(card(tpl, it, owner)));
@@ -434,6 +443,8 @@ function card(tpl, it, owner) {
     e.stopPropagation();
     const inTop = node.parentElement === $("#items");
     const isFirst = !node.previousElementSibling, isLast = !node.nextElementSibling;
+    const hideEntry = isEdit && { icon: it.hidden ? "show" : "hide", label: it.hidden ? "Show" : "Hide", run: () => setHidden(it, node, !it.hidden) };
+    if (amazon) { openMenu(more, [hideEntry], node); return; } // Amazon: nothing to open, copy or edit
     openMenu(more, [
       isEdit && { icon: "edit", label: "Edit details", run: () => $(".t-name", node).click() },
       link && { icon: "open", label: "Open in new tab", run: () => visitStore(it, link, owner) },
@@ -441,9 +452,10 @@ function card(tpl, it, owner) {
       isEdit && inTop && !isFirst && { icon: "top", label: "Move to top", run: () => moveToTop(it) },
       isEdit && inTop && !isFirst && { icon: "up", label: "Move up", run: () => moveBy(it, node, -1) },
       isEdit && inTop && !isLast && { icon: "down", label: "Move down", run: () => moveBy(it, node, 1) },
+      hideEntry,
     ], node);
   };
-  if ((!link && !isEdit) || amazon) more.remove(); // Amazon items: nothing to open, copy or edit
+  if (!isEdit && (!link || amazon)) more.remove(); // friends: Amazon items have nothing to open or copy
 
   // Text
   $(".t-name", node).textContent = it.name || "Untitled item";
@@ -459,6 +471,8 @@ function card(tpl, it, owner) {
     else node.querySelectorAll(".txt > div").forEach((el) => makeEditable(el, it, node));
     makeDraggable(node, it);
     wireOwned(node, it);
+    showHidden(node, it);
+    $(".hid", node).onclick = (e) => { e.stopPropagation(); e.preventDefault(); setHidden(it, node, false); };
   } else if (!owner) {
     wireClaim(node, it);
   }
@@ -497,6 +511,25 @@ function wireOwned(node, it) {
   }
   buy.onclick = (e) => { e.stopPropagation(); setOwned(true); };
   unbuy.onclick = (e) => { e.stopPropagation(); setOwned(false); };
+}
+
+// ---------- owner: hide from the share link (migration 013) ----------
+// The card stays where it is (full colour) until the next load, which moves it to "Hidden".
+
+function showHidden(node, it) {
+  $(".hid", node).hidden = it.hidden !== true;
+  node.classList.toggle("is-hidden", it.hidden === true);
+  $(".hid", node).setAttribute("aria-label", `${it.name || "This item"} is hidden from your share link. Show it.`);
+}
+async function setHidden(it, node, hidden) {
+  try {
+    if (!(await ownerRpc("owner_set_hidden", { p_item_id: it.id, p_hidden: hidden }))) throw new Error("not saved");
+    it.hidden = hidden;
+    showHidden(node, it);
+    toast(hidden ? "Hidden from your share link." : "Showing on your share link again.", () => setHidden(it, node, !hidden));
+  } catch (e) {
+    toast("Couldn't save that. Try again.");
+  }
 }
 
 // ---------- owner: remove / undo / move / edit / reorder ----------
