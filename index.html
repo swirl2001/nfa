@@ -11,7 +11,7 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self'; style-src 'self'; img-src https: data: 'self'; connect-src https://tpwsbimymlyjcotkvrqd.supabase.co; base-uri 'none'; form-action 'none'" />
   <link rel="icon" href="raven.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="share.css?v=202611231216" />
+  <link rel="stylesheet" href="share.css?v=202611241233" />
 </head>
 <body>
   <header id="head" class="head">
@@ -26,6 +26,17 @@
       <div id="account" class="account"></div>
     </div>
     <section id="intro" class="intro wrap-x" hidden>
+      <!-- Owner's Preview & manage (?preview=1): the list exactly as friends and family see it -->
+      <div id="previewBar" class="preview" hidden>
+        <a id="previewBack" class="text-link preview-back" href="#">‹ Back to wishlist</a>
+        <div class="preview-card">
+          <p id="previewText" class="preview-text"></p>
+          <div class="switch">
+            <label for="showGifted">Show gifted</label>
+            <button id="showGifted" class="switch-btn" type="button" role="switch" aria-checked="false"><span class="knob" aria-hidden="true"></span></button>
+          </div>
+        </div>
+      </div>
       <div class="title-row">
         <h1 id="title" class="title"></h1>
         <!-- Owner (edit link) only -->
@@ -63,7 +74,7 @@
       <ol class="steps">
         <li><b>Save items to your wishlist.</b> Right-click any product photo on a shop's website. Choose “Save to NFA Wishlist”, or tap the (+) NFA button if you've turned it on.</li>
         <li><b>Share.</b> Send your wishlist's link to friends and family. They don't need an account or the extension to view and update your wishlist.</li>
-        <li><b>Gift.</b> Gifters tap “Mark as gifted” so nobody gifts a duplicate gift. Recipients never see what's been bought.</li>
+        <li><b>Gift.</b> Gifters tap “Mark as gifted” so nobody gifts a duplicate gift. Recipients don't see what's been bought, unless they choose to peek.</li>
       </ol>
       <div class="shots">
         <figure class="shot shot-tall"><img src="img/home/share.jpg" width="466" height="760" loading="lazy" alt="After tapping share, a message says the link is copied, with the link and a copy button." /><figcaption>Share one link</figcaption></figure>
@@ -147,7 +158,11 @@
     </section>
     <section id="items" class="grid" aria-label="Wishlist items"></section>
     <!-- Friends only: items someone already got, moved here on page load -->
-    <h2 id="boughtHead" class="section-h" hidden>Gifted</h2>
+    <div id="boughtRow" class="section-row" hidden>
+      <h2 id="boughtHead" class="section-h">Gifted</h2>
+      <!-- Owner's preview, Show gifted on: Edit shows Undo under every gifted item -->
+      <button id="manageBtn" class="btn-save" type="button" aria-pressed="false" hidden>Edit</button>
+    </div>
     <section id="bought" class="grid" aria-labelledby="boughtHead" hidden></section>
   <!-- One floating menu, filled in for whichever ⋯ was clicked -->
   <div id="menu" class="menu" role="menu" hidden></div>
@@ -161,6 +176,7 @@
     <span data-icon="note"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v12l-4 4H5z"/><path d="M15 20v-4h4M8 9h8M8 13h5"/></svg></span>
     <span data-icon="plus"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
     <span data-icon="edit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg></span>
+    <span data-icon="eye"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span>
     <span data-icon="download"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></span>
   </template>
 
@@ -188,6 +204,17 @@
         <button id="limitNo" class="text-link" type="button">Not now</button>
         <button id="limitYes" class="btn-save" type="button">Sign in with Google</button>
       </div>
+    </div>
+  </section>
+
+  <!-- Owner's preview: confirm before showing what was gifted -->
+  <div id="peekScrim" class="scrim scrim-top" aria-hidden="true" hidden></div>
+  <section id="peek" class="dialog" role="dialog" aria-modal="true" aria-labelledby="peekTitle" aria-describedby="peekText" hidden>
+    <p id="peekTitle" class="gate-title">Show what was gifted?</p>
+    <p id="peekText" class="gate-body">This might spoil your surprise. You'll see which items friends and family marked as gifted.</p>
+    <div class="form-actions gate-actions">
+      <button id="peekNo" class="text-link" type="button">Cancel</button>
+      <button id="peekYes" class="btn-save" type="button">Show gifted</button>
     </div>
   </section>
 
@@ -250,13 +277,15 @@
         <span class="unbuy-on">✓ I gifted this</span><span class="unbuy-touch" aria-hidden="true">Undo</span>
         <span class="tip" aria-hidden="true">Click to undo</span>
       </button>
+      <!-- Owner's preview, Edit on: make a gifted item available again -->
+      <button class="pill pill-small clear" type="button" hidden>Undo</button>
     </article>
   </template>
 
-  <script src="config.js?v=202611231216"></script>
-  <script src="amazon.js?v=202611231216"></script>
-  <script src="price.js?v=202611231216"></script>
-  <script src="auth.js?v=202611231216"></script>
-  <script src="share.js?v=202611231216"></script>
+  <script src="config.js?v=202611241233"></script>
+  <script src="amazon.js?v=202611241233"></script>
+  <script src="price.js?v=202611241233"></script>
+  <script src="auth.js?v=202611241233"></script>
+  <script src="share.js?v=202611241233"></script>
 </body>
 </html>

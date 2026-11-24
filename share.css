@@ -180,8 +180,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .pill:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--ink); }
 /* Friends' purchase buttons: small white pills */
 .pill-small { min-height: 30px; padding: 4px 12px; font-size: 13px; }
-.buy, .unbuy { align-self: flex-start; margin-top: 8px; }
-.buy:hover, .unbuy:hover { background: var(--hover); }
+.buy, .unbuy, .clear { align-self: flex-start; margin-top: 8px; }
+.buy:hover, .unbuy:hover, .clear:hover { background: var(--hover); }
 /* "✓ I gifted/own this": a "Click to undo" tooltip on hover or keyboard focus (the button's
    aria-label says it too). Phones can't hover, so they show a small underlined "Undo" instead. */
 .unbuy { position: relative; gap: 6px; }
@@ -202,6 +202,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   .tip { display: none; }
 }
 .section-h { font-size: 18px; font-weight: 700; margin: 40px 0 14px; padding-top: 18px; border-top: 1px solid var(--line); }
+/* "Gifted" heading row; the owner's preview adds an Edit pill on the right */
+.section-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 40px 0 14px; padding-top: 18px; border-top: 1px solid var(--line); }
+.section-row .section-h { margin: 0; padding: 0; border: 0; }
+.section-row[hidden] { display: none; }
 .row-end { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
 
 
@@ -544,3 +548,37 @@ select:disabled { opacity: .55; cursor: default; }
 .scrim.on { opacity: 1; }
 .gate.spot { position: relative; z-index: 4; }
 @media (prefers-reduced-motion: reduce) { .scrim { transition: none; } }
+
+/* ---- Owner's Preview & manage (?preview=1) ---- */
+.preview { margin: 4px 0 18px; }
+.preview[hidden] { display: none; }
+.preview-back { display: inline-block; font-size: 14px; margin-bottom: 10px; }
+.preview-card {
+  display: flex; align-items: center; gap: 16px 24px; justify-content: space-between; flex-wrap: wrap;
+  padding: 14px 16px; background: var(--card); border-radius: 16px; box-shadow: 0 3px 12px rgba(0, 0, 0, .14);
+}
+.preview-text { margin: 0; flex: 1 1 320px; font-size: 15px; line-height: 21px; color: var(--muted); }
+.switch { display: flex; align-items: center; gap: 10px; flex: none; }
+.switch label { font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; }
+.switch-btn {
+  position: relative; width: 44px; height: 24px; padding: 0; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--line); transition: background .15s;
+}
+.switch-btn .knob {
+  position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3); transition: transform .15s;
+}
+.switch-btn[aria-checked="true"] { background: var(--btn); }
+.switch-btn[aria-checked="true"] .knob { transform: translateX(20px); background: var(--card); }
+.switch-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.switch-btn:disabled { opacity: .6; cursor: default; }
+.scrim-top { z-index: 60; }
+.dialog {
+  position: fixed; z-index: 61; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 32px)); padding: 24px; background: var(--card); border-radius: 20px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .2);
+}
+.dialog p { margin: 0; }
+.dialog[hidden], .scrim[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .switch-btn, .switch-btn .knob { transition: none; } }
+.dialog .gate-actions { margin-top: 24px; }

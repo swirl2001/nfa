@@ -7,8 +7,11 @@
 //                                            share button + list menu. Never any claim info.
 //   Legacy:   ?list=<slug>&view=me        → read-only owner view (claims hidden)
 // Never uses innerHTML: names, descriptions and links come from other websites.
+//   Preview:  owner link + &preview=1      → "Preview & manage": the friends and family view, plus a Show gifted
+//                                            toggle (spoiler warning first) and Edit → Undo on gifted items
+//                                            (migration 012, owner_* calls with the edit token).
 // Hard rules: no Amazon links/images (amazon.js), plain store links only (no affiliate tags),
-// the owner never sees claim status.
+// the owner sees gift marks only by choosing to (Preview & manage), and never who marked them.
 
 if (location.hostname === "www.nfawishlist.com") location.replace("https://nfawishlist.com" + location.pathname + location.search);
 const $ = (s, el = document) => el.querySelector(s);
@@ -16,6 +19,9 @@ const $ = (s, el = document) => el.querySelector(s);
 let params, slug, editToken, isEdit, viewOnlyOwner;
 let ownerSignedIn = true;  // false: this list's owner hasn't signed in with Google, so it can't be shared yet (migration 011)
 let signedInOwner = false; // signed in with Google and this is their list: edit mode, token kept in memory only
+let preview = false;       // owner's Preview & manage: friends and family view, isEdit off, editToken kept
+let showGifted = false;    // preview: show what's been gifted (off every time the page opens)
+let managing = false;      // preview: Edit on → Undo under every gifted item
 function readParams() {
   params = new URLSearchParams(location.search);
   slug = (params.get("list") || "").trim();
@@ -206,29 +212,35 @@ async function load() {
     const mine = await rpc("my_edit_link", { p_slug: slug }).catch(() => null);
     if (mine && mine.token) { editToken = mine.token; isEdit = true; signedInOwner = true; }
   }
+  // Owner's Preview & manage: render exactly what friends and family see; owner_* calls still use the token.
+  if (isEdit && params.get("preview") === "1") { preview = true; isEdit = false; }
   if (!/^[A-Za-z0-9_-]{6,64}$/.test(slug)) { setState("This link is missing its list code. Ask for the link again."); return; }
   let data, ownsHere = false;
   try {
     // Friends link: also check (in parallel) whether this browser belongs to the list's owner.
     [data, ownsHere] = await Promise.all([
-      isEdit ? ownerRpc("owner_list", {}) : rpc("get_shared_list", { p_slug: slug }),
-      isEdit ? false : isMyList(slug),
+      isEdit || preview ? ownerRpc("owner_list", {}) : rpc("get_shared_list", { p_slug: slug }),
+      isEdit || preview ? false : isMyList(slug),
     ]);
   } catch (e) { setState("Couldn't load this list. Check your connection and refresh."); return; }
   if (!data) {
-    setState(isEdit
+    setState(isEdit || preview
       ? "This edit link doesn't work anymore. Open your list again from the NFA Wishlist extension (⋯ → Open wishlist)."
       : "This list doesn't exist anymore, or the link is wrong.");
     return;
   }
-  if (isEdit) rememberMyList(slug); // this browser now knows the list is yours
+  if (isEdit || preview) rememberMyList(slug); // this browser now knows the list is yours
   if (isEdit && data.owner_signed_in === false) ownerSignedIn = false;
   const owner = isEdit || viewOnlyOwner || ownsHere || data.is_owner === true;
   document.body.classList.add(isEdit ? "owner" : owner ? "owner-view" : "friend");
+  if (preview) document.body.classList.add("preview");
   listTitle = data.title;
   renderHeader(owner);
   items = Array.isArray(data.items) ? data.items : [];
+  // Preview starts with gifts hidden: only the owner's own marks from this browser show as gifted.
+  if (preview) items.forEach((it) => { it.claimed = !!mine()[it.id]; });
   render(owner);
+  if (preview) setupPreview();
   loadDetails(); // note + shipping address (each optional)
   resumePendingMark();
   resumeShareAfterSignIn();
@@ -335,12 +347,12 @@ function renderHeader(owner) {
   if (!$("#title").isContentEditable) $("#title").textContent = listTitle;
   wireTitleEdit();
   $("#explainer").textContent = signedInOwner
-    ? "This is your list. Edit it here, and use the share button to copy the link for friends and family. What's been bought stays hidden from you."
+    ? "This is your list. Edit it here, and use the share button to copy the link for friends and family. What's been gifted stays hidden unless you peek (⋯ → Preview & manage)."
     : isEdit
-    ? "This is your private edit link. Don't share it. Use the share button to send friends and family their own link. What's been bought stays hidden from you."
+    ? "This is your private edit link. Don't share it. Use the share button to send friends and family their own link. What's been gifted stays hidden unless you peek (⋯ → Preview & manage)."
     : owner
       ? "Don't spoil the surprise! This is your list, so what friends and family buy stays hidden from you."
-      : "Tap “Mark as gifted” when you get something, so nobody doubles up. The list owner never sees what's been bought.";
+      : "Tap “Mark as gifted” when you get something, so nobody doubles up. The list owner won't see it unless they choose to peek.";
   $("#shareBtn").hidden = !isEdit;
   $("#listMenuBtn").hidden = !isEdit;
   $("#shareGate").hidden = !(isEdit && !ownerSignedIn);
@@ -367,7 +379,8 @@ function render(owner) {
   boughtGrid.textContent = "";
   bought.forEach((it) => boughtGrid.appendChild(card(tpl, it, owner)));
   $("#boughtHead").textContent = isEdit ? "Received" : "Gifted";
-  boughtGrid.hidden = $("#boughtHead").hidden = !bought.length;
+  boughtGrid.hidden = $("#boughtRow").hidden = !bought.length;
+  $("#manageBtn").hidden = !(preview && showGifted);
 }
 
 // ---------- cards ----------
@@ -750,6 +763,7 @@ $("#listMenuBtn").onclick = (e) => {
     { icon: "plus", label: "Add item", run: openNewItem },
     { icon: "copy", label: "Copy list", hint: "(text)", run: copyList },
     { icon: "download", label: "Download list", hint: "(CSV)", run: downloadList },
+    { icon: "eye", label: "Preview & manage", run: () => location.assign(previewUrl(true)) },
   ]);
 };
 let startRename = () => {};
@@ -829,6 +843,8 @@ function wireClaim(node, it) {
   else { if (token) setMine(it.id, null); showUnclaimed(node, it); }
   $(".buy", node).onclick = () => markPurchased(it);
   $(".unbuy", node).onclick = () => unmarkPurchased(it);
+  $(".clear", node).onclick = () => clearGift(it);
+  $(".clear", node).setAttribute("aria-label", `Undo: make ${it.name || "this item"} available to gift again`);
 }
 function showUnclaimed(node, it) {
   it.claimed = false;
@@ -836,18 +852,26 @@ function showUnclaimed(node, it) {
   $(".badge-out", node).hidden = it.in_stock !== false;
   $(".buy", node).hidden = false; $(".buy", node).disabled = false;
   $(".unbuy", node).hidden = true;
+  $(".clear", node).hidden = true;
 }
 function showClaimed(node, it, isMine) {
   it.claimed = true;
   node.classList.add("claimed");
   $(".badge-out", node).hidden = true; // stock doesn't matter once it's bought
   $(".buy", node).hidden = true;
-  $(".unbuy", node).hidden = !isMine; $(".unbuy", node).disabled = false;
+  $(".unbuy", node).hidden = !isMine || managing; $(".unbuy", node).disabled = false;
+  $(".clear", node).hidden = !managing; $(".clear", node).disabled = false; // owner's preview, Edit on
 }
 async function markPurchased(it) {
   const c = cards.get(it.id); if (!c) return;
   $(".buy", c.node).disabled = true;
   try {
+    if (preview) { // the owner, marking from their preview: no limit, own undo token like a friend's
+      const t = await ownerRpc("owner_mark_gifted", { p_item_id: it.id });
+      if (t) { setMine(it.id, t); showClaimed(c.node, it, true); toast("Marked as gifted.", () => unmarkPurchased(it)); }
+      else { showClaimed(c.node, it, false); toast(showGifted ? "Someone already got this one." : "Marked as gifted."); }
+      return;
+    }
     let token;
     try { token = await rpc("mark_purchased", { p_slug: slug, p_item_id: it.id, p_browser: browserId() }); }
     catch (e) {
@@ -888,9 +912,103 @@ async function unmarkPurchased(it) {
   }
 }
 
+// ---------- owner: Preview & manage (migration 012) ----------
+// The owner chose to peek: Show gifted asks first, then shows the real Gifted section. Edit puts
+// Undo under every gifted item (clears all marks on it + the owner's "received"); the card stays put.
+
+function previewUrl(on) {
+  const u = new URL(location.href);
+  if (on) u.searchParams.set("preview", "1"); else u.searchParams.delete("preview");
+  return u.toString();
+}
+function setupPreview() {
+  $("#previewBar").hidden = false;
+  $("#previewBack").href = previewUrl(false);
+  updatePreviewBar();
+}
+function updatePreviewBar() {
+  $("#showGifted").setAttribute("aria-checked", String(showGifted));
+  $("#previewText").textContent = showGifted
+    ? "This is your wishlist as friends and family see it, including what's been gifted."
+    : "This is your wishlist as friends and family see it. Gifted items stay hidden until you turn on Show gifted.";
+}
+async function clearGift(it) {
+  const c = cards.get(it.id); if (!c) return;
+  const btn = $(".clear", c.node);
+  btn.disabled = true;
+  try {
+    if (!(await ownerRpc("owner_clear_gifted", { p_item_id: it.id }))) throw new Error("not saved");
+    setMine(it.id, null);
+    showUnclaimed(c.node, it); // full colour, "Mark as gifted" again; stays in place until reload
+    toast("Available to gift again.");
+    $(".buy", c.node).focus();
+  } catch (e) {
+    btn.disabled = false;
+    toast("Couldn't change that. Try again.");
+  }
+}
+function setManaging(on) {
+  managing = on;
+  const b = $("#manageBtn");
+  b.textContent = on ? "Done" : "Edit";
+  b.setAttribute("aria-pressed", String(on));
+  for (const { node, it } of cards.values()) if (it.claimed && node.isConnected) showClaimed(node, it, !!mine()[it.id]);
+}
+$("#manageBtn").onclick = () => setManaging(!managing);
+async function setShowGifted(on) {
+  const sw = $("#showGifted");
+  sw.disabled = true;
+  try {
+    if (on) {
+      const ids = await ownerRpc("owner_gifted", {});
+      if (!Array.isArray(ids)) throw new Error("no data");
+      const gifted = new Set(ids);
+      items.forEach((it) => { it.claimed = gifted.has(it.id); });
+    } else {
+      items.forEach((it) => { it.claimed = !!mine()[it.id]; });
+    }
+    showGifted = on;
+    setManaging(false);
+    updatePreviewBar();
+    render(false);
+    announce(on ? "Showing what's been gifted." : "Gifted items hidden.");
+  } catch (e) {
+    toast("Couldn't load what's been gifted. Try again.");
+  } finally {
+    sw.disabled = false;
+  }
+}
+$("#showGifted").onclick = () => { if (showGifted) setShowGifted(false); else openPeek(); };
+// Spoiler warning: Cancel, Escape or a click outside keeps it off.
+function peekKeys(e) {
+  if (e.key === "Escape") { e.preventDefault(); closePeek(); return; }
+  if (e.key !== "Tab") return;
+  const a = $("#peekNo"), b = $("#peekYes");
+  if (e.shiftKey && document.activeElement === a) { e.preventDefault(); b.focus(); }
+  else if (!e.shiftKey && document.activeElement === b) { e.preventDefault(); a.focus(); }
+}
+function openPeek() {
+  const scrim = $("#peekScrim");
+  scrim.hidden = false;
+  requestAnimationFrame(() => scrim.classList.add("on"));
+  $("#peek").hidden = false;
+  $("#peekNo").focus();
+  document.addEventListener("keydown", peekKeys);
+}
+function closePeek() {
+  $("#peekScrim").classList.remove("on");
+  $("#peekScrim").hidden = true;
+  $("#peek").hidden = true;
+  document.removeEventListener("keydown", peekKeys);
+  $("#showGifted").focus();
+}
+$("#peekNo").onclick = closePeek;
+$("#peekScrim").onclick = closePeek;
+$("#peekYes").onclick = () => { closePeek(); setShowGifted(true); };
+
 // Remember which store page a friend opened, so coming back can ask "Did you buy …?"
 function recordVisit(it, owner) {
-  if (!owner && !isEdit && !it.claimed) store_.set(VISIT_KEY, { slug, itemId: it.id, at: Date.now() });
+  if (!owner && !isEdit && !preview && !it.claimed) store_.set(VISIT_KEY, { slug, itemId: it.id, at: Date.now() });
 }
 function visitStore(it, link, owner) {
   recordVisit(it, owner);
@@ -923,13 +1041,13 @@ function showLimit(it) {
 function resumePendingMark() {
   let p = null;
   try { p = JSON.parse(sessionStorage.getItem(PENDING_MARK) || "null"); sessionStorage.removeItem(PENDING_MARK); } catch (e) {}
-  if (!p || p.slug !== slug || !NFAAuth.user() || isEdit || document.body.classList.contains("owner-view")) return;
+  if (!p || p.slug !== slug || !NFAAuth.user() || isEdit || preview || document.body.classList.contains("owner-view")) return;
   const c = cards.get(p.itemId);
   if (c && !c.it.claimed) markPurchased(c.it);
 }
 
 function maybeAsk() {
-  if (isEdit || document.body.classList.contains("owner-view") || !$("#ask").hidden || !$("#limit").hidden) return;
+  if (isEdit || preview || document.body.classList.contains("owner-view") || !$("#ask").hidden || !$("#limit").hidden) return;
   const v = store_.get(VISIT_KEY);
   if (!v || v.slug !== slug) return;
   const age = Date.now() - v.at;
