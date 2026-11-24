@@ -897,6 +897,7 @@ function showClaimed(node, it, isMine) {
 }
 async function markPurchased(it) {
   const c = cards.get(it.id); if (!c) return;
+  if (!(await previewOk())) return;
   $(".buy", c.node).disabled = true;
   try {
     if (preview) { // the owner, marking from their preview: no limit, own undo token like a friend's
@@ -933,6 +934,7 @@ async function markPurchased(it) {
 async function unmarkPurchased(it) {
   const c = cards.get(it.id); const token = mine()[it.id];
   if (!c || !token) return;
+  if (!(await previewOk())) return;
   $(".unbuy", c.node).disabled = true;
   try {
     const ok = await rpc("unmark_purchased", { p_slug: slug, p_item_id: it.id, p_token: token });
@@ -967,6 +969,12 @@ function updatePreviewBar() {
 }
 async function clearGift(it) {
   const c = cards.get(it.id); if (!c) return;
+  const ok = await confirmBox({
+    title: "Make this available again?",
+    text: `${it.name || "This item"} will show as available to gift. If someone already bought it, you might receive it twice.`,
+    yes: "Make available",
+  });
+  if (!ok) return;
   const btn = $(".clear", c.node);
   btn.disabled = true;
   try {
@@ -987,7 +995,17 @@ function setManaging(on) {
   b.setAttribute("aria-pressed", String(on));
   for (const { node, it } of cards.values()) if (it.claimed && node.isConnected) showClaimed(node, it, !!mine()[it.id]);
 }
-$("#manageBtn").onclick = () => setManaging(!managing);
+$("#manageBtn").onclick = async () => {
+  if (managing) { setManaging(false); return; }
+  const ok = await confirmBox({
+    title: "Edit gifted items?",
+    text: "These are items friends and family marked as gifted. If you undo a gift, it will be available to gift again.",
+    yes: "OK",
+  });
+  if (!ok) return;
+  previewWarned = true; // they've just been told changes here are real
+  setManaging(true);
+};
 async function setShowGifted(on) {
   const sw = $("#showGifted");
   sw.disabled = true;
@@ -1011,33 +1029,66 @@ async function setShowGifted(on) {
     sw.disabled = false;
   }
 }
-$("#showGifted").onclick = () => { if (showGifted) setShowGifted(false); else openPeek(); };
-// Spoiler warning: Cancel, Escape or a click outside keeps it off.
-function peekKeys(e) {
-  if (e.key === "Escape") { e.preventDefault(); closePeek(); return; }
-  if (e.key !== "Tab") return;
-  const a = $("#peekNo"), b = $("#peekYes");
-  if (e.shiftKey && document.activeElement === a) { e.preventDefault(); b.focus(); }
-  else if (!e.shiftKey && document.activeElement === b) { e.preventDefault(); a.focus(); }
-}
-function openPeek() {
+// One confirm box for the preview (#peek): resolves true for the main button; Cancel, Escape or a
+// click outside → false. Focus goes back to whatever opened it.
+let confirmDone = null;
+function confirmBox({ title, text, yes }) {
+  if (confirmDone) confirmDone(false);
+  const back = document.activeElement;
+  $("#peekTitle").textContent = title;
+  $("#peekText").textContent = text;
+  $("#peekYes").textContent = yes;
   const scrim = $("#peekScrim");
   scrim.hidden = false;
   requestAnimationFrame(() => scrim.classList.add("on"));
   $("#peek").hidden = false;
   $("#peekNo").focus();
   document.addEventListener("keydown", peekKeys);
+  return new Promise((resolve) => {
+    confirmDone = (ok) => {
+      confirmDone = null;
+      scrim.classList.remove("on");
+      scrim.hidden = true;
+      $("#peek").hidden = true;
+      document.removeEventListener("keydown", peekKeys);
+      if (back && back.isConnected) back.focus();
+      resolve(ok);
+    };
+  });
 }
-function closePeek() {
-  $("#peekScrim").classList.remove("on");
-  $("#peekScrim").hidden = true;
-  $("#peek").hidden = true;
-  document.removeEventListener("keydown", peekKeys);
-  $("#showGifted").focus();
+function peekKeys(e) {
+  if (e.key === "Escape") { e.preventDefault(); confirmDone && confirmDone(false); return; }
+  if (e.key !== "Tab") return;
+  const a = $("#peekNo"), b = $("#peekYes");
+  if (e.shiftKey && document.activeElement === a) { e.preventDefault(); b.focus(); }
+  else if (!e.shiftKey && document.activeElement === b) { e.preventDefault(); a.focus(); }
 }
-$("#peekNo").onclick = closePeek;
-$("#peekScrim").onclick = closePeek;
-$("#peekYes").onclick = () => { closePeek(); setShowGifted(true); };
+$("#peekNo").onclick = () => confirmDone && confirmDone(false);
+$("#peekScrim").onclick = () => confirmDone && confirmDone(false);
+$("#peekYes").onclick = () => confirmDone && confirmDone(true);
+
+// Spoiler warning before showing what was gifted.
+$("#showGifted").onclick = async () => {
+  if (showGifted) { setShowGifted(false); return; }
+  const ok = await confirmBox({
+    title: "Show what was gifted?",
+    text: "This might spoil your surprise. You'll see which items friends and family marked as gifted.",
+    yes: "Show gifted",
+  });
+  if (ok) setShowGifted(true);
+};
+// First change in a preview visit: remind them it's live for friends and family (once per visit).
+let previewWarned = false;
+async function previewOk() {
+  if (!preview || previewWarned) return true;
+  const ok = await confirmBox({
+    title: "This is a preview",
+    text: "Anything you change here is visible to friends and family.",
+    yes: "OK",
+  });
+  if (ok) previewWarned = true;
+  return ok;
+}
 
 // Remember which store page a friend opened, so coming back can ask "Did you buy …?"
 function recordVisit(it, owner) {
