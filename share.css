@@ -557,7 +557,10 @@ select:disabled { opacity: .55; cursor: default; }
   display: flex; align-items: center; gap: 16px 24px; justify-content: space-between; flex-wrap: wrap;
   padding: 14px 16px; background: var(--card); border-radius: 16px; box-shadow: 0 3px 12px rgba(0, 0, 0, .14);
 }
-.preview-text { margin: 0; flex: 1 1 320px; font-size: 15px; line-height: 21px; color: var(--muted); }
+.preview-copy { flex: 1 1 320px; min-width: 0; }
+.preview-text { margin: 0; font-size: 15px; line-height: 21px; color: var(--muted); }
+.preview-help { margin: 6px 0 0; font-size: 13.5px; line-height: 19px; color: var(--muted); }
+.preview-help .text-link { color: var(--ink); }
 .switch { display: flex; align-items: center; gap: 10px; flex: none; }
 .switch label { font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; }
 .switch-btn {

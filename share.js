@@ -963,7 +963,7 @@ function previewUrl(on) {
 }
 function setupPreview() {
   $("#previewBar").hidden = false;
-  $("#previewBack").href = previewUrl(false);
+  $("#previewBack").href = $("#previewBack2").href = previewUrl(false);
   updatePreviewBar();
 }
 function updatePreviewBar() {
