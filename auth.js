@@ -37,6 +37,7 @@ const NFAAuth = (() => {
       expiresAt: d.expires_at ? d.expires_at * 1000 : Date.now() + (d.expires_in || 3600) * 1000,
       email: u.email || meta.email || "", name: meta.full_name || meta.name || "",
       userId: u.id || "",
+      google: ((u.app_metadata && u.app_metadata.providers) || []).includes("google"),
     };
   }
 
@@ -94,7 +95,7 @@ const NFAAuth = (() => {
 
   function user() {
     const s = ls.get(SESSION);
-    return s ? { email: s.email, name: s.name } : null;
+    return s ? { email: s.email, name: s.name, google: s.google !== false } : null;
   }
 
   // Signed in in the extension but not on this site: go through Google once, quietly.
@@ -139,7 +140,8 @@ const NFAAuth = (() => {
     catch (e) { throw new Error(e.status ? "That code didn't work. Check it, or send a new one." : "Couldn't reach NFA. Check your connection and try again."); }
     ss.del(EMAIL);
     ls.del(NO_AUTO);
-    ls.set(SESSION, toSession(d));
+    const sess = toSession(d);
+    ls.set(SESSION, { ...sess, email: sess.email || email });
   }
 
   async function signOut() {

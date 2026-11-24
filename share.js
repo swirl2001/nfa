@@ -300,7 +300,18 @@ function renderAccount() {
   b.type = "button"; b.className = "avatar-btn"; b.setAttribute("aria-haspopup", "menu");
   b.setAttribute("aria-label", `Account: ${u.email || "signed in"}`);
   b.title = u.email || "Signed in";
-  b.textContent = ((u.name || u.email || "?").trim()[0] || "?").toUpperCase();
+  if (u.google === false) { // signed in with an email code: a plain person icon, not a letter
+    b.classList.add("avatar-generic");
+    const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("width", "18"); svg.setAttribute("height", "18");
+    svg.setAttribute("fill", "currentColor"); svg.setAttribute("aria-hidden", "true");
+    const head = document.createElementNS(NS, "circle");
+    head.setAttribute("cx", "12"); head.setAttribute("cy", "8.5"); head.setAttribute("r", "4");
+    const body = document.createElementNS(NS, "path");
+    body.setAttribute("d", "M4 20.5c.6-4 3.9-6.5 8-6.5s7.4 2.5 8 6.5z");
+    svg.append(head, body);
+    b.appendChild(svg);
+  } else b.textContent = ((u.name || u.email || "?").trim()[0] || "?").toUpperCase();
   b.onclick = (e) => {
     e.stopPropagation();
     openMenu(b, [
