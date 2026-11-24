@@ -593,3 +593,19 @@ select:disabled { opacity: .55; cursor: default; }
 .hid:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
 .hid[hidden] { display: none; }
 .card.is-hidden .badge-out { left: 52px; top: 14px; }
+
+/* ---- Loading: grey boxes (gentle pulse) until things arrive; photos fade in ---- */
+@keyframes sk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+.media .img { transition: opacity .25s; }
+.media.loading { background: var(--noimg-bg); animation: sk-pulse 1.4s ease-in-out infinite; }
+.media.loading .img { opacity: 0; }
+.sk { background: var(--noimg-bg); border-radius: 6px; animation: sk-pulse 1.4s ease-in-out infinite; }
+.skeleton { padding-top: 4px; }
+.sk-title { width: min(260px, 60%); height: 28px; border-radius: 8px; }
+.sk-line { width: min(460px, 90%); height: 14px; margin: 12px 0 28px; }
+.sk-card { display: flex; flex-direction: column; }
+.sk-media { aspect-ratio: 4 / 5; border-radius: 14px; }
+.sk-name { width: 70%; height: 15px; margin-top: 12px; }
+.sk-desc { width: 90%; height: 12px; margin-top: 10px; }
+.sk-price { width: 30%; height: 14px; margin-top: 10px; }
+@media (prefers-reduced-motion: reduce) { .sk, .media.loading { animation: none; } .media .img { transition: none; } }

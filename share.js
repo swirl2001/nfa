@@ -190,7 +190,9 @@ window.addEventListener("scroll", () => {
 // ---------- load ----------
 
 function setState(msg, empty = false) {
+  const sk = $("#skeleton"); if (sk) sk.remove(); // anything the page decides to show replaces the grey placeholders
   const s = $("#state");
+  s.classList.remove("sr-only");
   s.textContent = msg || "";
   s.classList.toggle("empty", empty);
   s.hidden = !msg;
@@ -405,7 +407,8 @@ function card(tpl, it, owner) {
   const showPlaceholder = () => { img.hidden = true; noimg.hidden = false; };
   $(".noimg-store", node).textContent = amazon ? "" : (it.store || "");
   const src = imageLink(it);
-  if (src) { img.onload = () => fitPhoto(img); img.src = src; img.alt = it.name || ""; img.onerror = showPlaceholder; } else showPlaceholder();
+  // Grey box (pulsing) until the photo arrives, then it fades in.
+  if (src) { media.classList.add("loading"); img.onload = () => { fitPhoto(img); media.classList.remove("loading"); }; img.addEventListener("error", () => media.classList.remove("loading")); img.src = src; img.alt = it.name || ""; img.onerror = showPlaceholder; } else showPlaceholder();
   if (amazon) {
     const alt = $(".alt", node), q = encodeURIComponent(it.name || "");
     alt.hidden = false;
@@ -1195,6 +1198,28 @@ async function maybeAutoSignIn() {
   }
 }
 
+// Loading: grey placeholder title + cards until the list arrives (list links only, never the home page).
+// "Loading the list…" stays for screen readers; setState() removes all of it.
+function showSkeleton() {
+  const sk = document.createElement("div");
+  sk.id = "skeleton";
+  sk.className = "skeleton";
+  sk.setAttribute("aria-hidden", "true");
+  const bar = (cls) => { const d = document.createElement("div"); d.className = `sk ${cls}`; return d; };
+  sk.append(bar("sk-title"), bar("sk-line"));
+  const grid = document.createElement("div");
+  grid.className = "grid";
+  for (let n = 0; n < 8; n++) {
+    const c = document.createElement("div");
+    c.className = "sk-card";
+    c.append(bar("sk-media"), bar("sk-name"), bar("sk-desc"), bar("sk-price"));
+    grid.appendChild(c);
+  }
+  sk.appendChild(grid);
+  $("#state").classList.add("sr-only");
+  $("#state").after(sk);
+}
+if (slug) showSkeleton();
 load();
 
 
