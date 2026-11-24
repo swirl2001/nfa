@@ -11,7 +11,7 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self'; style-src 'self'; img-src https: data: 'self'; connect-src https://tpwsbimymlyjcotkvrqd.supabase.co; base-uri 'none'; form-action 'none'" />
   <link rel="icon" href="raven.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="share.css?v=202611241337" />
+  <link rel="stylesheet" href="share.css?v=202611241524" />
 </head>
 <body>
   <header id="head" class="head">
@@ -55,8 +55,9 @@
       <div id="gateScrim" class="scrim" aria-hidden="true" hidden></div>
       <section id="shareGate" class="gate" aria-labelledby="gateTitle" hidden>
         <p id="gateTitle" class="gate-title">Sign in to share your wishlist</p>
-        <p class="gate-body">Your share link is saved to your Google account, so it works from any computer. Friends and family won't see your email.</p>
+        <p class="gate-body">Your share link is saved to your account, so it works from any computer. Friends and family won't see your email.</p>
         <div class="form-actions gate-actions">
+          <button id="gateEmail" class="text-link" type="button">Sign in with email</button>
           <button id="gateSignIn" class="btn-save" type="button">Sign in with Google</button>
         </div>
       </section>
@@ -208,10 +209,11 @@
     <div class="ask-body">
       <div class="limit-copy">
         <p id="limitTitle" class="ask-text">You've marked 3 gifts on this list</p>
-        <p id="limitText" class="limit-text">To mark more, sign in with Google. It keeps anyone with the link from marking everything as gifted.</p>
+        <p id="limitText" class="limit-text">To mark more, sign in. It keeps anyone with the link from marking everything as gifted.</p>
       </div>
       <div class="form-actions">
         <button id="limitNo" class="text-link" type="button">Not now</button>
+        <button id="limitEmail" class="text-link" type="button">Sign in with email</button>
         <button id="limitYes" class="btn-save" type="button">Sign in with Google</button>
       </div>
     </div>
@@ -226,6 +228,33 @@
       <button id="peekNo" class="text-link" type="button">Cancel</button>
       <button id="peekYes" class="btn-save" type="button">Show gifted</button>
     </div>
+  </section>
+
+  <!-- Sign in with email (6-digit code). Cancel, Escape or a click outside closes it. -->
+  <div id="emailScrim" class="scrim scrim-top" aria-hidden="true" hidden></div>
+  <section id="emailDialog" class="dialog" role="dialog" aria-modal="true" aria-labelledby="emailTitle" aria-describedby="emailText" hidden>
+    <p id="emailTitle" class="gate-title">Sign in with email</p>
+    <p id="emailText" class="gate-body">We'll email you a 6-digit code. No password needed.</p>
+    <form id="emailForm" class="email-form" novalidate>
+      <div id="emailStep" class="field">
+        <label for="emailInput">Email</label>
+        <input id="emailInput" class="field-input" type="email" autocomplete="email" spellcheck="false" maxlength="254" placeholder="you@example.com" aria-describedby="emailError" />
+      </div>
+      <div id="codeStep" class="field" hidden>
+        <label for="codeInput">Code</label>
+        <input id="codeInput" class="field-input code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="20" placeholder="000000" aria-describedby="emailError" />
+      </div>
+      <p id="emailError" class="field-error" hidden></p>
+      <p id="codeLinks" class="code-links" hidden>
+        <button id="resendCode" class="text-link" type="button">Send a new code</button>
+        <span aria-hidden="true">·</span>
+        <button id="otherEmail" class="text-link" type="button">Use a different email</button>
+      </p>
+      <div class="form-actions email-actions">
+        <button id="emailCancel" class="text-link" type="button">Cancel</button>
+        <button id="emailSubmit" class="btn-save" type="submit">Email me a code</button>
+      </div>
+    </form>
   </section>
 
   <!-- Toast (with Undo after deletes) -->
@@ -294,10 +323,10 @@
     </article>
   </template>
 
-  <script src="config.js?v=202611241337"></script>
-  <script src="amazon.js?v=202611241337"></script>
-  <script src="price.js?v=202611241337"></script>
-  <script src="auth.js?v=202611241337"></script>
-  <script src="share.js?v=202611241337"></script>
+  <script src="config.js?v=202611241524"></script>
+  <script src="amazon.js?v=202611241524"></script>
+  <script src="price.js?v=202611241524"></script>
+  <script src="auth.js?v=202611241524"></script>
+  <script src="share.js?v=202611241524"></script>
 </body>
 </html>

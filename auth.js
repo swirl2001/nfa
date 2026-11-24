@@ -1,4 +1,4 @@
-// NFAAuth — optional Google sign-in for nfawishlist.com (no library, plain fetch).
+// NFAAuth — optional sign-in (Google, or an emailed 6-digit code) for nfawishlist.com (no library, plain fetch).
 // Flow: Sign in → Supabase /authorize (Google, PKCE) → back here with ?code=… → exchange for a
 // session → return to the page the person started on. The session (access + refresh token) lives in
 // this browser's localStorage "nfa-session"; signing out deletes it and ends it on the server.
@@ -107,6 +107,41 @@ const NFAAuth = (() => {
     return true;
   }
 
+  // ---- Sign in with email (6-digit code, Nov 24) ----
+  // sendCode emails a code (makes the account if the email is new); verifyCode signs in with it.
+  // The step in progress lives in sessionStorage "nfa-email" {email, sentAt} so a reload goes back to it.
+  const EMAIL = "nfa-email";
+  const CODE_MS = 10 * 60 * 1000;
+  function codeError(e) {
+    const m = /after (\d+) seconds?/i.exec((e && e.message) || "");
+    if (m) return new Error(`Wait ${m[1]} seconds, then send a new code.`);
+    if (e && e.status === 429) return new Error("Too many codes for now. Wait a few minutes and try again.");
+    if (!e || !e.status) return new Error("Couldn't reach NFA. Check your connection and try again.");
+    return new Error("Couldn't send the code. Check the email address and try again.");
+  }
+  async function sendCode(raw) {
+    const email = String(raw || "").trim().toLowerCase();
+    try { await call("/auth/v1/otp", { method: "POST", body: { email, create_user: true } }); }
+    catch (e) { throw codeError(e); }
+    ss.set(EMAIL, { email, sentAt: Date.now() });
+    return email;
+  }
+  function pendingEmail() {
+    const p = ss.get(EMAIL);
+    return p && Date.now() - p.sentAt < CODE_MS ? p.email : "";
+  }
+  const cancelEmail = () => ss.del(EMAIL);
+  async function verifyCode(raw) {
+    const email = pendingEmail();
+    if (!email) throw new Error("That code has expired. Send a new one.");
+    let d;
+    try { d = await call("/auth/v1/verify", { method: "POST", body: { email, token: String(raw || "").replace(/\D/g, ""), type: "email" } }); }
+    catch (e) { throw new Error(e.status ? "That code didn't work. Check it, or send a new one." : "Couldn't reach NFA. Check your connection and try again."); }
+    ss.del(EMAIL);
+    ls.del(NO_AUTO);
+    ls.set(SESSION, toSession(d));
+  }
+
   async function signOut() {
     const t = await token().catch(() => null);
     ls.del(SESSION);
@@ -124,5 +159,5 @@ const NFAAuth = (() => {
     try { return JSON.parse(atob(s.accessToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub || ""; } catch (e) { return ""; }
   }
 
-  return { signIn, autoSignIn, finishRedirect, token, user, userId, signOut, forget };
+  return { signIn, sendCode, verifyCode, pendingEmail, cancelEmail, autoSignIn, finishRedirect, token, user, userId, signOut, forget };
 })();

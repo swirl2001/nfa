@@ -9,7 +9,7 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'" />
   <link rel="icon" href="raven.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="share.css?v=202611241337" />
+  <link rel="stylesheet" href="share.css?v=202611241524" />
 </head>
 <body class="page">
   <header class="head">
@@ -25,7 +25,7 @@
 
   <main class="wrap prose">
     <h1>Privacy policy</h1>
-    <p class="meta">Last updated November 22, 2026</p>
+    <p class="meta">Last updated November 24, 2026</p>
 
     <p>NFA Wishlist (“NFA”, “we”) is a free Chrome extension and website for saving gifts from independent shops and sharing them with friends and family. This policy explains what we collect, why, and how to delete it. The short version: we collect only what's needed to keep your list working, we don't sell or share it with advertisers, and we don't track you around the web.</p>
 
@@ -35,16 +35,17 @@
       <li><b>The items you save:</b> the product's name, description, price and currency, whether it's in stock, the store's name, the product page address, and the address of its photo. The extension reads these from the page only when you choose “Save to NFA Wishlist” (or tap the save button). Anything you type, like a new name, description or price, is saved too.</li>
       <li><b>Your list:</b> its name, the order of your items, and whether you marked something “I own this”.</li>
       <li><b>Items you add yourself</b> on the website (“Add item”), and <b>a photo, if you upload one</b>. Photos are resized in your browser before upload and stored with Supabase. Like product photos from shops, anyone with the photo's address can view it, so don't upload anything private.</li>
-      <li><b>A note and shipping address, if you add them</b> (both optional), and who you chose to show each one to: anyone with your link, anyone who signs in with Google, or nobody. We only send them to the people you chose. Clearing them deletes them.</li>
+      <li><b>A note and shipping address, if you add them</b> (both optional), and who you chose to show each one to: anyone with your link, anyone who signs in, or nobody. We only send them to the people you chose. Clearing them deletes them.</li>
       <li><b>An anonymous account ID:</b> the first time you save, we create an account for you with no name, email or password. It's a random ID that lets your list sync and keeps others from changing it.</li>
       <li><b>Link codes:</b> when you share, we create a random code for your list's link, and a separate private code for your own edit link.</li>
     </ul>
 
-    <h3>If you sign in with Google (needed to share)</h3>
+    <h3>If you sign in (needed to share)</h3>
     <ul>
-      <li>Saving gifts never needs an account. <b>Sharing your list does:</b> before you can share, you sign in with Google, so every share link belongs to an account and you can get it back from any computer. Friends and family never see your email. When you choose “Sign in with Google” in the extension or on the website, Google tells us your <b>email address, name and profile photo address</b>, and we link them to your account so you can open your list on other computers and edit it on the website. We don't get your Google password or access to anything else in your Google account.</li>
+      <li>Saving gifts never needs an account. <b>Sharing your list does:</b> before you can share, you sign in with Google or with your email address, so every share link belongs to an account and you can get it back from any computer. Friends and family never see your email. When you choose “Sign in with Google” in the extension or on the website, Google tells us your <b>email address, name and profile photo address</b>, and we link them to your account so you can open your list on other computers and edit it on the website. We don't get your Google password or access to anything else in your Google account.</li>
+      <li>When you choose “Sign in with email”, we store your <b>email address</b> and send it a 6-digit code (it works for 10 minutes). The email is sent for us by Resend. We use your address only to sign you in; no newsletters, and the email has no tracking.</li>
       <li>On the website, your sign-in is kept in your browser's localStorage (not a cookie) until you sign out.</li>
-      <li>If you've used NFA with the same Google account on another computer, we offer to copy this browser's items into that list. Your earlier list stays as it was.</li>
+      <li>If you've used NFA with the same Google account or email address on another computer, we offer to copy this browser's items into that list. Your earlier list stays as it was.</li>
     </ul>
     <p>We don't read your browsing history, and the extension can't see any page unless you ask it to save from that page. See “Extension permissions” below.</p>
 
@@ -52,7 +53,7 @@
     <ul>
       <li><b>Gift marks:</b> when a friend or family member taps “Mark as gifted”, we store that the item was marked, with no name. Their browser keeps a private code so only that browser can undo it.</li>
       <li><b>Gift-mark limit:</b> to stop anyone with the link from marking everything as gifted, someone who isn't signed in can mark up to 3 items per list. To enforce this, each mark stores a scrambled (one-way hashed) version of a random code kept in their browser and of their network (IP) address. The hashes are different for every list and can't be turned back into the code or address; the network one is erased after a day. Signed-in people have no limit. The list owner never sees any of this.</li>
-      <li>Friends and family don't need to sign in. If one of them chooses to sign in with Google, we receive the same details described above.</li>
+      <li>Friends and family don't need to sign in. If one of them chooses to sign in (with Google or with an email code), we receive the same details described above.</li>
       <li><b>Small notes in their own browser</b> (localStorage, not cookies): which items they marked, the last store page they opened from the list (so we can ask “Did you buy it?” when they come back; forgotten after 3 days), which lists' edit links were opened in that browser (so list owners don't see purchases), and the random code used for the gift-mark limit.</li>
     </ul>
     <p><b>The list owner doesn't see</b> what's been marked as gifted unless they choose to look (“Preview &amp; manage” → “Show gifted”, after a spoiler warning). They can then make an item available again, which removes its gift marks. <b>They never see who marked something.</b></p>
@@ -68,8 +69,9 @@
 
     <h2>Who else handles it</h2>
     <ul>
-      <li><b>Supabase</b> stores lists, items, gift marks and Google sign-in details (servers in the United States).</li>
+      <li><b>Supabase</b> stores lists, items, gift marks and sign-in details (Google or email address) (servers in the United States).</li>
       <li><b>Google</b> handles “Sign in with Google”, under Google's own privacy policy.</li>
+      <li><b>Resend</b> sends the sign-in code emails (servers in the United States). It gets your email address and the code, nothing else.</li>
       <li><b>Cloudflare</b> hosts the website nfawishlist.com.</li>
       <li><b>GitHub</b> hosts an older copy of the website (swirl2001.github.io/nfa) during our move to nfawishlist.com.</li>
       <li><b>Online shops:</b> list pages show product photos loaded straight from the shop's website, so that shop can see a request from your browser. We tell browsers not to send which page you came from. When you open a product, you go to the shop's own site, under its own privacy policy.</li>
@@ -95,7 +97,7 @@
     <ul>
       <li>We keep your list until you delete it. Deleting an item removes it from our servers.</li>
       <li>Signing out removes your sign-in from that browser or the extension. Your list stays in your account.</li>
-      <li>To delete your whole list and account (including Google sign-in details), email us (below) with your list's link and we'll delete everything within 30 days. Uninstalling the extension removes the copy on your computer, but not the list on our servers.</li>
+      <li>To delete your whole list and account (including sign-in details), email us (below) with your list's link and we'll delete everything within 30 days. Uninstalling the extension removes the copy on your computer, but not the list on our servers.</li>
       <li>Friends and family can clear their gift-mark codes and notes by clearing site data for nfawishlist.com in their browser.</li>
     </ul>
 

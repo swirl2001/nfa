@@ -273,7 +273,7 @@ async function showMyListLink() {
     a.textContent = "Open your list";
     box.append(a);
   } else {
-    box.textContent = "No list yet. Save something with the NFA Wishlist extension, then choose Sign in with Google in its ⋯ menu.";
+    box.textContent = "No list yet. Save something with the NFA Wishlist extension, then sign in from its ⋯ menu.";
   }
   box.hidden = false;
 }
@@ -287,7 +287,12 @@ function renderAccount() {
   if (!u || preview) { // preview: show what friends and family see (signed out), without signing you out
     const b = document.createElement("button");
     b.type = "button"; b.className = "text-link"; b.textContent = "Sign in";
-    b.onclick = () => (preview ? toast("This is a preview. Friends and family see a Sign in link here.") : NFAAuth.signIn());
+    b.setAttribute("aria-haspopup", "menu");
+    b.onclick = (e) => {
+      if (preview) { toast("This is a preview. Friends and family see a Sign in link here."); return; }
+      e.stopPropagation();
+      openMenu(b, signInChoices());
+    };
     box.append(b);
     return;
   }
@@ -299,7 +304,7 @@ function renderAccount() {
   b.onclick = (e) => {
     e.stopPropagation();
     openMenu(b, [
-      { info: u.email ? `Signed in as ${u.email}` : "Signed in with Google" },
+      { info: u.email ? `Signed in as ${u.email}` : "Signed in" },
       { label: "Sign out", run: async () => { await NFAAuth.signOut(); location.reload(); } },
     ]);
   };
@@ -749,7 +754,7 @@ $("#gateSignIn").onclick = async () => {
   const ids = NFA_CONFIG.extensionIds || [];
   const rt = window.chrome && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime : null;
   const btn = $("#gateSignIn");
-  if (!rt || !ids.length) { toast("Open the NFA Wishlist extension and sign in with Google there."); return; }
+  if (!rt || !ids.length) { toast("Open the NFA Wishlist extension and sign in there."); return; }
   btn.disabled = true;
   toast("Finish signing in in the Google window.");
   let res = null;
@@ -771,8 +776,19 @@ $("#gateSignIn").onclick = async () => {
   } else if (res && res.status === "error") {
     toast(/cancel/i.test(res.message || "") ? "Sign-in cancelled." : "Sign-in didn't work. Try again.");
   } else {
-    toast("Open the NFA Wishlist extension and sign in with Google there.");
+    toast("Open the NFA Wishlist extension and sign in there.");
   }
+};
+// Owner page: "Sign in with email" also signs in in the extension (the email is added to the same
+// list and share link), through the same dialog.
+$("#gateEmail").onclick = () => {
+  const fromShare = $("#shareGate").classList.contains("spot");
+  if (gateSpotOff) { gateSpotOff(); gateSpotOff = null; }
+  openEmail({ via: "ext", after: (status) => {
+    if (status === "merge") { toast("Almost done: open the NFA Wishlist extension to finish signing in."); return; }
+    if (fromShare) { try { sessionStorage.setItem(SHARE_AFTER, slug); } catch (e) {} }
+    location.reload();
+  } });
 };
 // After a Share-initiated sign-in, copy the friends and family link.
 async function resumeShareAfterSignIn() {
@@ -1124,6 +1140,10 @@ function showLimit(it) {
     try { sessionStorage.setItem(PENDING_MARK, JSON.stringify({ slug, itemId: it.id })); } catch (e) {}
     NFAAuth.signIn();
   };
+  $("#limitEmail").onclick = () => openEmail({ after: () => {
+    try { sessionStorage.setItem(PENDING_MARK, JSON.stringify({ slug, itemId: it.id })); } catch (e) {}
+    location.reload();
+  } });
   $("#limitYes").focus({ preventScroll: true });
 }
 // Back from signing in on the limit card: mark the item they were trying to mark.
@@ -1196,7 +1216,7 @@ async function maybeAutoSignIn() {
       try { rt.sendMessage(id, { type: "nfa-account" }, (r) => { void chrome.runtime.lastError; resolve(r || null); }); }
       catch (e) { resolve(null); }
     });
-    if (a && a.signedIn) { NFAAuth.autoSignIn(typeof a.email === "string" ? a.email : ""); return; }
+    if (a && a.signedIn && a.google !== false) { NFAAuth.autoSignIn(typeof a.email === "string" ? a.email : ""); return; }
   }
 }
 
@@ -1357,7 +1377,16 @@ function renderDetails() {
       const b = document.createElement("button");
       b.type = "button"; b.className = "text-link"; b.textContent = "Sign in with Google to see it";
       b.onclick = () => { if (preview) { toast("This is a preview. Friends and family sign in here to see your address."); return; } try { sessionStorage.setItem(SHIP_OPEN, "1"); } catch (e) {} NFAAuth.signIn(); };
-      body.append(p, b);
+      const m = document.createElement("button");
+      m.type = "button"; m.className = "text-link"; m.textContent = "Sign in with email";
+      m.onclick = () => {
+        if (preview) { toast("This is a preview. Friends and family sign in here to see your address."); return; }
+        openEmail({ after: () => { try { sessionStorage.setItem(SHIP_OPEN, "1"); } catch (e) {} location.reload(); } });
+      };
+      const row = document.createElement("div");
+      row.className = "ship-signin";
+      row.append(b, m);
+      body.append(p, row);
     }
     let reopen = false;
     try { reopen = sessionStorage.getItem(SHIP_OPEN) === "1" && addrShown; if (reopen) sessionStorage.removeItem(SHIP_OPEN); } catch (e) {}
@@ -1506,8 +1535,8 @@ function buildNewItemCard() {
     };
     media.append(preview, file, pick);
   } else {
-    const b = el("button", { type: "button", class: "text-link", text: "Sign in to add a photo" });
-    b.onclick = () => NFAAuth.signIn();
+    const b = el("button", { type: "button", class: "text-link", text: "Sign in to add a photo", "aria-haspopup": "menu" });
+    b.onclick = (e) => { e.stopPropagation(); openMenu(b, signInChoices()); };
     media.append(el("div", { class: "new-photo new-photo-off" }, b));
   }
 
@@ -1641,3 +1670,172 @@ function fitPhoto(img) {
   if (!box || !r || !Number.isFinite(r)) return;
   box.style.aspectRatio = String(Math.min(1.6, Math.max(2 / 3, r)));
 }
+
+// ---------- Sign in with email (6-digit code, Nov 24; Figma "Other ways to sign in") ----------
+// A dialog: email → code (paste works, signs in by itself at 6 digits). Cancel, Escape or a click
+// outside closes it; reopening within 10 minutes goes back to the code step.
+// via "site": this website signs in (NFAAuth). via "ext": the owner page asks the extension to do it,
+// so the email joins the extension's list and share link (like "Sign in with Google" on the gate).
+function signInChoices() {
+  return [
+    { label: "Sign in with Google", run: () => NFAAuth.signIn() },
+    { label: "Sign in with email", run: () => openEmail() },
+  ];
+}
+const EXT_EMAIL = "nfa-ext-email"; // sessionStorage {email, sentAt} while the extension's code is out
+async function askExtension(msg) {
+  const ids = NFA_CONFIG.extensionIds || [];
+  const rt = window.chrome && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime : null;
+  if (!rt || !ids.length) return null;
+  let res = null;
+  for (const id of ids) {
+    res = await new Promise((resolve) => {
+      try { rt.sendMessage(id, msg, (r) => { void chrome.runtime.lastError; resolve(r || null); }); }
+      catch (e) { resolve(null); }
+    });
+    if (res && res.status !== "not-mine") break;
+  }
+  return res;
+}
+const emailVia = {
+  site: {
+    pending: () => NFAAuth.pendingEmail(),
+    send: (email) => NFAAuth.sendCode(email),
+    verify: async (code) => { await NFAAuth.verifyCode(code); return "signed-in"; },
+    cancel: () => NFAAuth.cancelEmail(),
+  },
+  ext: {
+    pending() {
+      try { const p = JSON.parse(sessionStorage.getItem(EXT_EMAIL) || "null"); return p && Date.now() - p.sentAt < 600000 ? p.email : ""; } catch (e) { return ""; }
+    },
+    async send(email) {
+      const r = await askExtension({ type: "nfa-email-send", slug, email });
+      if (!r || r.status === "not-mine") throw new Error("Open the NFA Wishlist extension and sign in there.");
+      if (r.status === "error") throw new Error(r.message || "Couldn't send the code. Try again.");
+      email = email.trim().toLowerCase();
+      try { sessionStorage.setItem(EXT_EMAIL, JSON.stringify({ email, sentAt: Date.now() })); } catch (e) {}
+      return email;
+    },
+    async verify(code) {
+      const r = await askExtension({ type: "nfa-email-verify", slug, code });
+      if (!r || r.status === "not-mine") throw new Error("Open the NFA Wishlist extension and sign in there.");
+      if (r.status === "error") throw new Error(r.message || "That code didn't work. Check it, or send a new one.");
+      try { sessionStorage.removeItem(EXT_EMAIL); } catch (e) {}
+      return r.status;
+    },
+    cancel() { try { sessionStorage.removeItem(EXT_EMAIL); } catch (e) {} },
+  },
+};
+let emailCtx = null, emailBusy = false, emailAddr = "";
+function openEmail({ via = "site", after = () => location.reload() } = {}) {
+  closeMenu();
+  emailCtx = { api: emailVia[via], after, back: document.activeElement };
+  const scrim = $("#emailScrim");
+  scrim.hidden = false;
+  requestAnimationFrame(() => scrim.classList.add("on"));
+  $("#emailDialog").hidden = false;
+  document.addEventListener("keydown", emailKeys, true);
+  const pending = emailCtx.api.pending();
+  if (pending) codeStep(pending); else emailStep("");
+}
+function closeEmail() {
+  if (!emailCtx) return;
+  const back = emailCtx.back;
+  emailCtx = null;
+  $("#emailDialog").hidden = true;
+  $("#emailScrim").classList.remove("on");
+  $("#emailScrim").hidden = true;
+  document.removeEventListener("keydown", emailKeys, true);
+  if (back && back.isConnected && back.offsetParent) back.focus();
+}
+function emailKeys(e) {
+  if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); closeEmail(); return; }
+  if (e.key !== "Tab") return;
+  const f = [...$("#emailDialog").querySelectorAll("input, button")].filter((x) => !x.disabled && x.offsetParent);
+  if (!f.length) return;
+  if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+  else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+}
+function emailError(msg, field) {
+  $("#emailError").textContent = msg || "";
+  $("#emailError").hidden = !msg;
+  ["#emailInput", "#codeInput"].forEach((id) => $(id).removeAttribute("aria-invalid"));
+  if (msg && field) $(field).setAttribute("aria-invalid", "true");
+}
+function emailStep(value) {
+  $("#emailTitle").textContent = "Sign in with email";
+  $("#emailText").textContent = "We'll email you a 6-digit code. No password needed.";
+  $("#emailStep").hidden = false; $("#codeStep").hidden = true; $("#codeLinks").hidden = true;
+  $("#emailSubmit").textContent = "Email me a code";
+  emailError("");
+  $("#emailInput").value = value || "";
+  $("#emailInput").focus();
+}
+function codeStep(email) {
+  emailAddr = email;
+  $("#emailTitle").textContent = "Check your email";
+  $("#emailText").textContent = `We sent a 6-digit code to ${email}. It works for 10 minutes.`;
+  $("#emailStep").hidden = true; $("#codeStep").hidden = false; $("#codeLinks").hidden = false;
+  $("#emailSubmit").textContent = "Sign in";
+  emailError("");
+  $("#codeInput").value = "";
+  $("#codeInput").focus();
+}
+function emailBusyOn(on) {
+  emailBusy = on;
+  $("#emailDialog").querySelectorAll("button, input").forEach((b) => { if (b.id !== "emailCancel") b.disabled = on; });
+}
+async function sendEmailCode(email) {
+  if (!emailCtx) return false;
+  emailBusyOn(true);
+  try {
+    const sent = await emailCtx.api.send(email);
+    emailBusyOn(false);
+    codeStep(sent || email);
+    return true;
+  } catch (e) {
+    emailBusyOn(false);
+    emailError(e.message || "Couldn't send the code. Try again.", $("#codeStep").hidden ? "#emailInput" : null);
+    return false;
+  }
+}
+async function checkEmailCode(code) {
+  if (!emailCtx) return;
+  emailBusyOn(true);
+  let status;
+  try {
+    status = await emailCtx.api.verify(code);
+  } catch (e) {
+    emailBusyOn(false);
+    emailError(e.message || "That code didn't work. Check it, or send a new one.", "#codeInput");
+    $("#codeInput").focus(); $("#codeInput").select();
+    return;
+  }
+  emailBusyOn(false);
+  const after = emailCtx.after;
+  closeEmail();
+  after(status);
+}
+$("#emailForm").onsubmit = (e) => {
+  e.preventDefault();
+  if (emailBusy) return;
+  if (!$("#emailStep").hidden) {
+    const v = $("#emailInput").value.trim();
+    if (v.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { emailError("Check the email address and try again.", "#emailInput"); $("#emailInput").focus(); return; }
+    sendEmailCode(v);
+  } else {
+    const c = $("#codeInput").value.replace(/\D/g, "");
+    if (c.length !== 6) { emailError("Type the 6-digit code from the email.", "#codeInput"); $("#codeInput").focus(); return; }
+    checkEmailCode(c);
+  }
+};
+$("#codeInput").oninput = () => {
+  const el = $("#codeInput"), d = el.value.replace(/\D/g, "").slice(0, 6);
+  if (el.value !== d) el.value = d;
+  if (el.getAttribute("aria-invalid")) emailError("");
+  if (d.length === 6 && !emailBusy) checkEmailCode(d);
+};
+$("#resendCode").onclick = async () => { if (!emailBusy && await sendEmailCode(emailAddr)) toast("New code sent."); };
+$("#otherEmail").onclick = () => { if (emailCtx) emailCtx.api.cancel(); emailStep(emailAddr); };
+$("#emailCancel").onclick = closeEmail;
+$("#emailScrim").onclick = closeEmail;

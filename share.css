@@ -613,3 +613,25 @@ select:disabled { opacity: .55; cursor: default; }
 .sk-price { width: 30%; height: 14px; margin-top: 10px; }
 @media (prefers-reduced-motion: reduce) { .sk, .media.loading { animation: none; } .media .img { transition: none; } }
 a.btn-save { text-decoration: none; }
+
+/* Sign in with email dialog (same look as the extension's) */
+.email-form { display: grid; gap: 16px; margin-top: 16px; }
+.field { display: grid; gap: 6px; }
+.field[hidden], .field-error[hidden], .code-links[hidden] { display: none; }
+.field label { font-size: 13px; font-weight: 600; color: var(--ink); }
+.field-input {
+  width: 100%; box-sizing: border-box; height: 40px; font: inherit; font-size: 15px; color: var(--ink);
+  background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 0 12px;
+}
+.field-input::placeholder { color: var(--placeholder); opacity: 1; }
+.field-input:focus { outline: none; box-shadow: 0 0 0 2px var(--ink); border-color: transparent; }
+.code-input { height: 50px; font-size: 22px; letter-spacing: .3em; font-variant-numeric: tabular-nums; }
+.field-input[aria-invalid="true"] { border-color: var(--error); box-shadow: 0 0 0 1px var(--error); }
+.field-error { margin: 0; font-size: 13px; line-height: 18px; color: var(--error); }
+.code-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.code-links .text-link { font-size: 13px; color: var(--muted); }
+.email-actions { margin-top: 8px; gap: 24px; }
+#shareGate .gate-actions { justify-content: space-between; }
+:root { --error: #c5221f; }
+@media (prefers-color-scheme: dark) { :root { --error: #f28b82; } }
+.ship-signin { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 8px; }
