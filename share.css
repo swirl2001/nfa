@@ -135,8 +135,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 /* The overlay never catches clicks itself (the photo link underneath does); only its buttons do. */
 .ov-btn { pointer-events: none; }
-.media:hover .overlay, .media:focus-within .overlay, .card.menu-open .overlay { opacity: 1; }
-.media:hover .ov-btn, .media:focus-within .ov-btn, .card.menu-open .ov-btn { pointer-events: auto; }
+.media:hover .overlay, .media:has(:focus-visible) .overlay, .card.menu-open .overlay { opacity: 1; }
+.media:hover .ov-btn, .media:has(:focus-visible) .ov-btn, .card.menu-open .ov-btn { pointer-events: auto; }
 @media (hover: none) {
   .overlay { opacity: 1; background: none; }
   .ov-btn { pointer-events: auto; }
@@ -472,10 +472,10 @@ select:disabled { opacity: .55; cursor: default; }
 /* ---- Amazon cards: on hover a muted grey card, scribbles fade to 20%, links turn white (nothing covers
    them); delete button top right, no ⋯ menu; name + description crossed out (still readable) and locked ---- */
 .alt, .alt-scribble, .alt-etsy, .alt-web { transition: background-color .15s, opacity .15s, color .15s; }
-.media:hover .alt, .media:focus-within .alt { background: #5f6368; }
-.media:hover .alt-scribble, .media:focus-within .alt-scribble { opacity: .2; }
-.media:hover .alt-etsy, .media:hover .alt-web, .media:focus-within .alt-etsy, .media:focus-within .alt-web { color: #ffffff; }
-.media:hover .alt a:focus-visible, .media:focus-within .alt a:focus-visible { outline-color: #ffffff; }
+.media:hover .alt, .media:has(:focus-visible) .alt { background: #5f6368; }
+.media:hover .alt-scribble, .media:has(:focus-visible) .alt-scribble { opacity: .2; }
+.media:hover .alt-etsy, .media:hover .alt-web, .media:has(:focus-visible) .alt-etsy, .media:has(:focus-visible) .alt-web { color: #ffffff; }
+.media:hover .alt a:focus-visible, .media:has(:focus-visible) .alt a:focus-visible { outline-color: #ffffff; }
 .card.amazon .overlay { background: none; }
 .card.amazon .ov-store { display: none; }
 .card.amazon .ov-bottom { top: 8px; bottom: auto; left: auto; right: 50px; }
