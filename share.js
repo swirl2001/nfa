@@ -1774,7 +1774,7 @@ function emailStep(value) {
 function codeStep(email) {
   emailAddr = email;
   $("#emailTitle").textContent = "Check your email";
-  $("#emailText").textContent = `We sent a 6-digit code to ${email}. It works for 10 minutes.`;
+  $("#emailText").textContent = `We sent a 6-digit code to ${email}. It works for 10 minutes. Not there? Check your spam folder.`;
   $("#emailStep").hidden = true; $("#codeStep").hidden = false; $("#codeLinks").hidden = false;
   $("#emailSubmit").textContent = "Sign in";
   emailError("");
