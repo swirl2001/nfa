@@ -257,7 +257,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 /* Footer */
 .foot { border-top: 1px solid var(--line); padding: 18px 16px 28px; text-align: center; color: var(--muted); font-size: 13px; }
-.foot p { margin: 0 auto; max-width: 60ch; }
+.foot p { margin: 0 auto; text-wrap: balance; } /* one line on computers; even lines on phones, no lone last word (Nov 25) */
 
 /* Toast */
 .toast {
