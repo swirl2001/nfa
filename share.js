@@ -1531,7 +1531,7 @@ function openNewItem() {
   scrim.onclick = () => { if (!newItemDirty()) closeNewItem(); };
   const dlg = buildNewItemCard();
   document.body.append(scrim, dlg);
-  document.documentElement.classList.add("modal-open");
+  lockPageScroll();
   requestAnimationFrame(() => scrim.classList.add("on"));
   document.addEventListener("keydown", newItemKeys, true);
   $("#niName").focus();
@@ -1553,8 +1553,24 @@ function teardownNewItem() {
   if (n) n.remove();
   if (sc) sc.remove();
   newItemPhoto = null;
-  document.documentElement.classList.remove("modal-open");
+  unlockPageScroll();
   document.removeEventListener("keydown", newItemKeys, true);
+}
+// iPhone Safari ignores overflow:hidden for touch scrolling, so pin the page (position: fixed, offset by the
+// current scroll) while a dialog is open, and put the scroll back where it was afterwards (Nov 25).
+let lockedScrollY = null;
+function lockPageScroll() {
+  if (lockedScrollY !== null) return;
+  lockedScrollY = window.scrollY;
+  document.body.style.top = `-${lockedScrollY}px`;
+  document.documentElement.classList.add("modal-open");
+}
+function unlockPageScroll() {
+  if (lockedScrollY === null) return;
+  const y = lockedScrollY; lockedScrollY = null;
+  document.documentElement.classList.remove("modal-open");
+  document.body.style.top = "";
+  window.scrollTo(0, y);
 }
 
 function el(tag, props = {}, ...kids) {
