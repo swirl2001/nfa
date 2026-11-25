@@ -823,7 +823,7 @@ async function resumeShareAfterSignIn() {
   toast(ok ? "Link copied." : "Here's your link.", null, { sticky: true, url });
 }
 
-// ---------- owner header: share + ⋯ (Rename, Copy list, Download list) ----------
+// ---------- owner header: share + ⋯ (Rename wishlist, Copy, Download; Nov 25 wording) ----------
 
 // Share: copy the friends link and keep it on screen (until closed) to copy again or select by hand.
 $("#shareBtn").onclick = async () => {
@@ -835,11 +835,11 @@ $("#shareBtn").onclick = async () => {
 $("#listMenuBtn").onclick = (e) => {
   e.stopPropagation();
   openMenu($("#listMenuBtn"), [
-    { icon: "edit", label: "Rename", run: openRename },
+    { icon: "edit", label: "Rename wishlist", run: openRename },
     { icon: "note", label: "Add note / address", run: openDetails },
     { icon: "plus", label: "Add item", run: openNewItem },
-    { icon: "copy", label: "Copy list", hint: "(text)", run: copyList },
-    { icon: "download", label: "Download list", hint: "(CSV)", run: downloadList },
+    { icon: "copy", label: "Copy", hint: "(text)", run: copyList },
+    { icon: "download", label: "Download", hint: "(CSV)", run: downloadList },
     { icon: "eye", label: "Preview & manage", run: () => location.assign(previewUrl(true)) },
   ]);
 };
