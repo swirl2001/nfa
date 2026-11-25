@@ -578,16 +578,19 @@ select:disabled { opacity: .55; cursor: default; }
 .switch label { font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; }
 .switch-btn {
   position: relative; width: 44px; height: 24px; padding: 0; border: 0; border-radius: 999px; cursor: pointer;
-  background: var(--line); transition: background .15s;
+  background: var(--toggle-filled-track-off); transition: background .15s;
 }
 .switch-btn .knob {
-  position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--toggle-filled-thumb-off);
   box-shadow: 0 1px 2px rgba(0, 0, 0, .3); transition: transform .15s;
 }
-.switch-btn[aria-checked="true"] { background: var(--btn); }
-.switch-btn[aria-checked="true"] .knob { transform: translateX(20px); background: var(--card); }
+.switch-btn[aria-checked="true"] { background: var(--toggle-filled-track-on); }
+.switch-btn[aria-checked="true"] .knob { transform: translateX(20px); background: var(--toggle-filled-thumb-on); }
 .switch-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.switch-btn:disabled { opacity: .6; cursor: default; }
+.switch-btn:disabled { opacity: .38; cursor: default; }
+/* Toggle, option A "Filled" (Figma page "Toggle", variables toggle/filled/*, Nov 25): the off track meets 3:1 on cards in light and dark. */
+:root { --toggle-filled-track-off: #80868b; --toggle-filled-thumb-off: #ffffff; --toggle-filled-track-on: #202124; --toggle-filled-thumb-on: #ffffff; }
+@media (prefers-color-scheme: dark) { :root { --toggle-filled-track-off: #9aa0a6; --toggle-filled-track-on: #e8eaed; --toggle-filled-thumb-on: #202124; } }
 .scrim-top { z-index: 60; }
 .dialog {
   position: fixed; z-index: 61; left: 50%; top: 50%; transform: translate(-50%, -50%);
