@@ -1243,8 +1243,11 @@ async function maybeAutoSignIn() {
       catch (e) { resolve(null); }
     });
     if (a && a.signedIn && a.google !== false) { NFAAuth.autoSignIn(typeof a.email === "string" ? a.email : ""); return; }
+    // Signed in there with an email code: can't be repeated silently, so the email dialog comes prefilled (Nov 24).
+    if (a && a.signedIn && a.google === false && typeof a.email === "string" && a.email.length <= 254) { extEmail = a.email; return; }
   }
 }
+var extEmail = ""; // the NFA extension's email-code account, if any
 
 // Loading: grey placeholder title + cards until the list arrives (list links only, never the home page).
 // "Loading the list…" stays for screen readers; setState() removes all of it.
@@ -1762,7 +1765,9 @@ function openEmail({ via = "site", after = () => location.reload() } = {}) {
   $("#emailDialog").hidden = false;
   document.addEventListener("keydown", emailKeys, true);
   const pending = emailCtx.api.pending();
-  if (pending) codeStep(pending); else emailStep("");
+  if (pending) codeStep(pending);
+  else if (via === "site" && extEmail) emailStep(extEmail, true);
+  else emailStep("");
 }
 function closeEmail() {
   if (!emailCtx) return;
@@ -1788,14 +1793,16 @@ function emailError(msg, field) {
   ["#emailInput", "#codeInput"].forEach((id) => $(id).removeAttribute("aria-invalid"));
   if (msg && field) $(field).setAttribute("aria-invalid", "true");
 }
-function emailStep(value) {
+function emailStep(value, fromExt = false) {
   $("#emailTitle").textContent = "Sign in with email";
-  $("#emailText").textContent = "We'll email you a 6-digit code. No password needed.";
+  $("#emailText").textContent = fromExt
+    ? `You're signed in on the NFA extension as ${value}. We'll email you a 6-digit code to sign in here too.`
+    : "We'll email you a 6-digit code. No password needed.";
   $("#emailStep").hidden = false; $("#codeStep").hidden = true; $("#codeLinks").hidden = true;
   $("#emailSubmit").textContent = "Email me a code";
   emailError("");
   $("#emailInput").value = value || "";
-  $("#emailInput").focus();
+  (fromExt ? $("#emailSubmit") : $("#emailInput")).focus(); // prefilled: Return sends the code
 }
 function codeStep(email) {
   emailAddr = email;
