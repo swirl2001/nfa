@@ -1532,6 +1532,7 @@ function openNewItem() {
   const dlg = buildNewItemCard();
   document.body.append(scrim, dlg);
   lockPageScroll();
+  if (window.visualViewport) { visualViewport.addEventListener("resize", fitSheetToKeyboard); visualViewport.addEventListener("scroll", fitSheetToKeyboard); }
   requestAnimationFrame(() => scrim.classList.add("on"));
   document.addEventListener("keydown", newItemKeys, true);
   $("#niName").focus();
@@ -1553,8 +1554,23 @@ function teardownNewItem() {
   if (n) n.remove();
   if (sc) sc.remove();
   newItemPhoto = null;
+  if (window.visualViewport) { visualViewport.removeEventListener("resize", fitSheetToKeyboard); visualViewport.removeEventListener("scroll", fitSheetToKeyboard); }
   unlockPageScroll();
   document.removeEventListener("keydown", newItemKeys, true);
+}
+// Phones: while the on-screen keyboard is open, fit the sheet into the visible area above it (the photo shrinks
+// first, the form scrolls), so Cancel / Add to list sit just above the keyboard (Nov 25).
+function fitSheetToKeyboard() {
+  const d = $("#newItem"), vv = window.visualViewport;
+  if (!d || !vv) return;
+  const keyboard = matchMedia("(max-width: 560px)").matches && vv.height < window.innerHeight - 80;
+  if (keyboard) {
+    d.style.top = `${Math.round(vv.offsetTop + 8)}px`;
+    d.style.bottom = "auto";
+    d.style.height = `${Math.round(vv.height - 8)}px`;
+  } else {
+    d.style.top = d.style.bottom = d.style.height = "";
+  }
 }
 // iPhone Safari ignores overflow:hidden for touch scrolling, so pin the page (position: fixed, offset by the
 // current scroll) while a dialog is open, and put the scroll back where it was afterwards (Nov 25).
