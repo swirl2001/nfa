@@ -454,21 +454,24 @@ function card(tpl, it, owner) {
   // Overlay: store name, ⋯ menu, and (edit link only) 🗑
   $(".ov-store", node).textContent = amazon ? "" : (it.store || "");
   const label = it.name || "this item";
-  const more = $(".more", node);
+  const more = $(".more", node), moreTouch = $(".more-touch", node);
   more.setAttribute("aria-label", `More options for ${label}`);
+  moreTouch.setAttribute("aria-label", `More options for ${label}`);
   $(".del", node).setAttribute("aria-label", `Remove ${label}`);
   // Friends and family: "Mark as gifted" (Sean, Nov 21).
   // Owner's own page says "received" (Sean, Nov 21); friends and family say "gifted".
   $(".buy", node).textContent = isEdit ? "Mark as received" : "Mark as gifted";
   $(".buy", node).setAttribute("aria-label", isEdit ? `Mark ${label} as received` : `Mark ${label} as gifted`);
   $(".unbuy", node).setAttribute("aria-label", `I gifted ${label}. Click to undo.`);
-  more.onclick = (e) => {
+  const openCardMenu = (e) => {
     e.stopPropagation();
+    const btn = e.currentTarget;
     const inTop = node.parentElement === $("#items");
     const isFirst = !node.previousElementSibling, isLast = !node.nextElementSibling;
     const hideEntry = isEdit && { icon: it.hidden ? "show" : "hide", label: it.hidden ? "Show" : "Hide", run: () => setHidden(it, node, !it.hidden) };
-    if (amazon) { openMenu(more, [hideEntry], node); return; } // Amazon: nothing to open, copy or edit
-    openMenu(more, [
+    const deleteEntry = isEdit && { icon: "trash", label: "Delete", run: () => removeItem(it, node) };
+    if (amazon) { openMenu(btn, [hideEntry, deleteEntry], node); return; } // Amazon: nothing to open, copy or edit
+    openMenu(btn, [
       isEdit && { icon: "edit", label: "Edit details", run: () => $(".t-name", node).click() },
       link && { icon: "open", label: "Open in new tab", run: () => visitStore(it, link, owner) },
       link && { icon: "copy", label: "Copy link", run: () => copyText(link, "Link copied.") },
@@ -476,9 +479,12 @@ function card(tpl, it, owner) {
       isEdit && inTop && !isFirst && { icon: "up", label: "Move up", run: () => moveBy(it, node, -1) },
       isEdit && inTop && !isLast && { icon: "down", label: "Move down", run: () => moveBy(it, node, 1) },
       hideEntry,
+      deleteEntry,
     ], node);
   };
-  if (!isEdit && (!link || amazon)) more.remove(); // friends: Amazon items have nothing to open or copy
+  more.onclick = openCardMenu;
+  moreTouch.onclick = openCardMenu;
+  if (!isEdit && (!link || amazon)) { more.remove(); moreTouch.remove(); } // friends: Amazon items have nothing to open or copy
 
   // Text
   $(".t-name", node).textContent = it.name || "Untitled item";

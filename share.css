@@ -156,7 +156,19 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .card.claimed .ov-store { display: none; }
 
 /* Text lines; click to edit on the owner's edit link */
-.txt { padding: 8px 2px 0; display: flex; flex-direction: column; gap: 1px; }
+.txt { padding: 8px 2px 0; display: flex; flex-direction: column; gap: 1px; position: relative; }
+/* Touch screens (Nov 25): nothing over the photo; the card's ⋯ (with Delete) sits right of the name. */
+.more-touch { display: none; }
+@media (hover: none) {
+  .overlay { display: none; }
+  .more-touch {
+    display: grid; place-items: center; position: absolute; top: 4px; right: -6px; width: 32px; height: 32px;
+    padding: 0; border: 0; border-radius: 50%; background: none; color: var(--muted); cursor: pointer;
+  }
+  .more-touch[aria-expanded="true"] { background: var(--hover); color: var(--ink); }
+  .more-touch:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .card:has(.more-touch) .t-name { margin-right: 28px; }
+}
 .t-name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .t-desc { font-size: 13.5px; color: var(--muted); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .t-price { font-size: 15px; font-weight: 700; }
