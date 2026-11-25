@@ -1662,6 +1662,10 @@ function buildNewItemCard() {
     err,
     el("div", { class: "form-actions" }, cancel, save));
   form.onsubmit = (e) => { e.preventDefault(); saveNewItem(save); };
+  // Pinned Cancel / Add to list: a shadow + line on top only while more of the form is hidden under it (Nov 25).
+  const markHidden = () => form.lastElementChild.classList.toggle("covering", form.scrollTop + form.clientHeight < form.scrollHeight - 2);
+  form.addEventListener("scroll", markHidden, { passive: true });
+  if (window.ResizeObserver) new ResizeObserver(markHidden).observe(form);
   // Return saves from any box (Shift+Return = new line in the description); Escape cancels.
   form.addEventListener("keydown", (e) => {
     if (e.isComposing) return;

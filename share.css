@@ -429,7 +429,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .add-dialog .new-field input, .add-dialog .new-field textarea, .add-dialog .new-price select { background-color: var(--bg); font-size: 15px; }
 .add-dialog .new-field input { height: 40px; }
 .add-dialog .new-field textarea { height: 72px; resize: none; }
-.add-dialog .form-actions { position: sticky; bottom: 0; background: var(--card); margin: 0 -24px; padding: 8px 24px 24px; }
+.add-dialog .form-actions { position: sticky; bottom: 0; background: var(--card); margin: 0 -24px; padding: 12px 24px 24px; border-top: 1px solid transparent; transition: box-shadow .15s, border-color .15s; }
+.add-dialog .form-actions.covering { border-top-color: var(--line); box-shadow: 0 -8px 16px -8px rgba(0, 0, 0, .18); }
+@media (prefers-color-scheme: dark) { .add-dialog .form-actions.covering { box-shadow: 0 -10px 18px -8px rgba(0, 0, 0, .55); } }
+@media (prefers-reduced-motion: reduce) { .add-dialog .form-actions { transition: none; } }
 /* Phones: a sheet from the bottom, nearly full height */
 @media (max-width: 560px) {
   .dialog.add-dialog {
@@ -437,7 +440,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
     border-radius: 20px 20px 0 0;
   }
   .add-dialog .new-form { padding: 12px 20px 0; }
-  .add-dialog .form-actions { margin: 0 -20px; padding: 8px 20px calc(20px + env(safe-area-inset-bottom)); }
+  .add-dialog .form-actions { margin: 0 -20px; padding: 12px 20px calc(20px + env(safe-area-inset-bottom)); }
   .sheet-grabber { display: block; align-self: center; width: 36px; height: 4px; border-radius: 2px; background: var(--line); flex: none; }
 }
 .new-photo {
