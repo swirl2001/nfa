@@ -1520,14 +1520,41 @@ $("#detailsForm").onsubmit = async (e) => {
 const PHOTO_BUCKET = "item-photos";
 let newItemPhoto = null; // Blob ready to upload
 
+// Nov 25 (Figma "Add item"): a dialog, not a card in the grid. Phones: a sheet from the bottom, nearly full
+// height; computers: centered. The photo box (4:5) takes whatever height the fields leave; Cancel / Add to list
+// stay at the bottom. Escape or Cancel closes; a click outside closes only while the form is still empty.
+let newItemBack = null;
 function openNewItem() {
-  const existing = $("#newItem");
-  if (existing) { $("#niName").focus(); return; }
-  const node = buildNewItemCard();
-  $("#items").prepend(node);
-  setState("");
-  node.scrollIntoView({ block: "nearest", behavior: reduceMotion() ? "auto" : "smooth" });
+  if ($("#newItem")) { $("#niName").focus(); return; }
+  newItemBack = document.activeElement;
+  const scrim = el("div", { class: "scrim scrim-top", id: "newItemScrim", "aria-hidden": "true" });
+  scrim.onclick = () => { if (!newItemDirty()) closeNewItem(); };
+  const dlg = buildNewItemCard();
+  document.body.append(scrim, dlg);
+  document.documentElement.classList.add("modal-open");
+  requestAnimationFrame(() => scrim.classList.add("on"));
+  document.addEventListener("keydown", newItemKeys, true);
   $("#niName").focus();
+}
+function newItemDirty() {
+  return !!(newItemPhoto || ["niName", "niLink", "niDesc", "niPrice"].some((id) => $("#" + id) && $("#" + id).value.trim()));
+}
+function newItemKeys(e) {
+  if (!$("#newItem")) return;
+  if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); closeNewItem(); return; }
+  if (e.key !== "Tab") return;
+  const f = [...$("#newItem").querySelectorAll("input, textarea, select, button, label.new-photo")].filter((x) => !x.disabled && x.offsetParent && !x.classList.contains("sr-only"));
+  if (!f.length) return;
+  if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+  else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+}
+function teardownNewItem() {
+  const n = $("#newItem"), sc = $("#newItemScrim");
+  if (n) n.remove();
+  if (sc) sc.remove();
+  newItemPhoto = null;
+  document.documentElement.classList.remove("modal-open");
+  document.removeEventListener("keydown", newItemKeys, true);
 }
 
 function el(tag, props = {}, ...kids) {
@@ -1545,10 +1572,10 @@ function el(tag, props = {}, ...kids) {
 function buildNewItemCard() {
   newItemPhoto = null;
   const signedIn = !!NFAAuth.user();
-  const card = el("article", { class: "card new-card", id: "newItem", "aria-label": "New item" });
+  const card = el("section", { class: "dialog add-dialog", id: "newItem", role: "dialog", "aria-modal": "true", "aria-labelledby": "niTitle" });
 
   // Photo
-  const media = el("div", { class: "media new-media" });
+  const media = el("div", { class: "new-media" });
   const preview = el("img", { class: "img", alt: "", hidden: true });
   const file = el("input", { type: "file", id: "niPhoto", accept: "image/jpeg,image/png,image/webp", class: "sr-only" });
   const pick = el("label", { class: "new-photo", for: "niPhoto" },
@@ -1593,6 +1620,9 @@ function buildNewItemCard() {
   cancel.onclick = closeNewItem;
 
   const form = el("form", { class: "new-form", novalidate: true },
+    el("span", { class: "sheet-grabber", "aria-hidden": "true" }),
+    el("h2", { class: "add-title", id: "niTitle", text: "Add an item" }),
+    el("div", { class: "new-photo-wrap" }, media),
     field("niName", "Name", name),
     field("niLink", "Link (optional)", link),
     field("niDesc", "Description (optional)", desc),
@@ -1603,19 +1633,16 @@ function buildNewItemCard() {
   // Return saves from any box (Shift+Return = new line in the description); Escape cancels.
   form.addEventListener("keydown", (e) => {
     if (e.isComposing) return;
-    if (e.key === "Escape") { e.preventDefault(); closeNewItem(); return; }
     if (e.key === "Enter" && e.target.tagName === "TEXTAREA" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
   });
-  card.append(media, form);
+  card.append(form);
   return card;
 }
 
 function closeNewItem() {
-  const n = $("#newItem");
-  if (n) n.remove();
-  newItemPhoto = null;
-  if (!items.length) showEmptyList();
-  $("#listMenuBtn").focus();
+  teardownNewItem();
+  const back = newItemBack && newItemBack.isConnected && newItemBack.offsetParent ? newItemBack : $("#listMenuBtn");
+  if (back) back.focus();
 }
 
 function newItemError(msg, focusId) {
@@ -1681,8 +1708,7 @@ async function saveNewItem(btn) {
     };
     const ok = await ownerRpc("owner_restore_item", { p_item: item });
     if (!ok) throw new Error("not saved");
-    $("#newItem").remove();
-    newItemPhoto = null;
+    teardownNewItem();
     items.push(item);
     render(true);
     refocus(item);
