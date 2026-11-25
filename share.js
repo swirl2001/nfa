@@ -379,6 +379,8 @@ function renderHeader(owner) {
   $("#shareBtn").hidden = !isEdit;
   $("#listMenuBtn").hidden = !isEdit;
   $("#shareGate").hidden = !(isEdit && !ownerSignedIn);
+  $("#ownerGate").hidden = !(owner && !isEdit); // signed-out owner on the friends link
+  $("#explainer").hidden = !$("#ownerGate").hidden; // the card says it; don't repeat
   $("#intro").hidden = false;
 }
 
@@ -733,6 +735,10 @@ $("#items").addEventListener("dragover", (e) => {
   if (ref !== dragged && dragged.nextElementSibling !== ref) $("#items").insertBefore(dragged, ref);
 });
 $("#items").addEventListener("drop", (e) => { if (dragged) e.preventDefault(); });
+
+// ---------- owner on the friends link, signed out (Nov 24) ----------
+$("#ownerGateSignIn").onclick = () => NFAAuth.signIn(); // back here signed in → my_edit_link → owner page
+$("#ownerGateFriend").onclick = () => { forgetMyList(slug); location.reload(); };
 
 // ---------- sign in to share (owner page, owner not signed in yet) ----------
 // Spotlight (Sean, Nov 22): everything else goes 75% dark so only the sign-in card stands out.
@@ -1195,11 +1201,20 @@ window.addEventListener("focus", maybeAsk);
 //   2. the NFA extension in this Chrome says the list is yours (externally_connectable message).
 // If either says yes, the friends link shows the owner view: no purchases, no buttons.
 const OWNED_KEY = "nfa-owned";          // [slug, …] lists whose edit link was opened in this browser
+const NOT_MINE_KEY = "nfa-not-mine"; // [slug, …] lists this browser should treat as friends and family
 function rememberMyList(s) {
   const owned = store_.get(OWNED_KEY) || [];
   if (!owned.includes(s)) store_.set(OWNED_KEY, [...owned, s].slice(-20));
+  store_.set(NOT_MINE_KEY, (store_.get(NOT_MINE_KEY) || []).filter((x) => x !== s)); // opened as owner again
+}
+// "Not your list? View as friends and family" (e.g. a shared family computer): forget this browser's claim.
+function forgetMyList(s) {
+  store_.set(OWNED_KEY, (store_.get(OWNED_KEY) || []).filter((x) => x !== s));
+  const nm = store_.get(NOT_MINE_KEY) || [];
+  if (!nm.includes(s)) store_.set(NOT_MINE_KEY, [...nm, s].slice(-20));
 }
 async function isMyList(s) {
+  if ((store_.get(NOT_MINE_KEY) || []).includes(s)) return false;
   if ((store_.get(OWNED_KEY) || []).includes(s)) return true;
   const ids = (NFA_CONFIG.extensionIds || []);
   const rt = window.chrome && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime : null;

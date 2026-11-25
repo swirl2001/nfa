@@ -11,7 +11,7 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self'; style-src 'self'; img-src https: data: 'self'; connect-src https://tpwsbimymlyjcotkvrqd.supabase.co; base-uri 'none'; form-action 'none'" />
   <link rel="icon" href="raven.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="share.css?v=202611241552" />
+  <link rel="stylesheet" href="share.css?v=202611241924" />
 </head>
 <body>
   <header id="head" class="head">
@@ -52,6 +52,16 @@
       </div>
       <p id="explainer" class="explainer"></p>
       <!-- Owner page, list owner not signed in with Google yet (migration 011): sharing needs sign-in. -->
+      <!-- Friends and family link, signed out, but this browser looks like the owner's (Nov 24):
+           gift marks stay hidden; sign in to edit and share, or switch to the friends and family view. -->
+      <section id="ownerGate" class="gate" aria-labelledby="ownerGateTitle" hidden>
+        <p id="ownerGateTitle" class="gate-title">This is your list</p>
+        <p class="gate-body">Sign in to edit and share it. What friends and family buy stays hidden from you. Not your list? View it as friends and family.</p>
+        <div class="form-actions gate-actions">
+          <button id="ownerGateFriend" class="text-link" type="button" title="Not your list? Switch this browser to the friends and family view">View as friends and family</button>
+          <button id="ownerGateSignIn" class="btn-save" type="button">Sign in with Google</button>
+        </div>
+      </section>
       <div id="gateScrim" class="scrim" aria-hidden="true" hidden></div>
       <section id="shareGate" class="gate" aria-labelledby="gateTitle" hidden>
         <p id="gateTitle" class="gate-title">Sign in to share your wishlist</p>
@@ -323,10 +333,10 @@
     </article>
   </template>
 
-  <script src="config.js?v=202611241552"></script>
-  <script src="amazon.js?v=202611241552"></script>
-  <script src="price.js?v=202611241552"></script>
-  <script src="auth.js?v=202611241552"></script>
-  <script src="share.js?v=202611241552"></script>
+  <script src="config.js?v=202611241924"></script>
+  <script src="amazon.js?v=202611241924"></script>
+  <script src="price.js?v=202611241924"></script>
+  <script src="auth.js?v=202611241924"></script>
+  <script src="share.js?v=202611241924"></script>
 </body>
 </html>
