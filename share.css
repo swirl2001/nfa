@@ -183,7 +183,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .pill {
   display: inline-flex; align-items: center; justify-content: center; min-height: 38px;
   padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; text-decoration: none;
-  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  border: 1px solid var(--button-stroke); background: var(--card); color: var(--ink);
 }
 .pill-solid { background: var(--btn); color: var(--on-btn); border-color: var(--btn); }
 .pill-ghost:hover { background: var(--hover); }
@@ -296,7 +296,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .brand-link { color: inherit; text-decoration: none; width: fit-content; }
 .brand-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 4px; }
 .foot-links { display: flex; justify-content: center; gap: 18px; margin-top: 10px; }
-.foot-links a { color: var(--muted); }
+.foot-links a { color: var(--muted); font-weight: 600; text-decoration: none; text-underline-offset: 3px; }
+.foot-links a:hover, .foot-links a:focus-visible { text-decoration: underline; }
 .foot-links a[aria-current="page"] { color: var(--ink); font-weight: 600; text-decoration: none; }
 
 .prose, .landing { line-height: 1.6; font-size: 16px; }
@@ -329,10 +330,12 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .account { flex: none; display: flex; align-items: center; }
 .text-link {
   display: inline-flex; align-items: center; min-height: 24px; padding: 0; background: none; border: 0;
-  color: var(--ink); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
-  text-decoration: underline; text-underline-offset: 3px;
+  color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  text-decoration: none; text-underline-offset: 3px;
 }
-.text-link:hover { text-decoration-thickness: 2px; }
+/* Links (Nov 25, Figma "Links" + "Buttons"): standalone links and text buttons (Cancel, Not now) have no underline;
+   it shows on hover and keyboard focus. Links inside a sentence (.inline, plain <a> in text) stay underlined. */
+.text-link:hover, .text-link:focus-visible, .text-link.inline { text-decoration: underline; }
 .text-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
 .avatar-btn {
   width: 32px; height: 32px; border-radius: 50%; border: 0; padding: 0; cursor: pointer;
@@ -510,7 +513,11 @@ select:disabled { opacity: .55; cursor: default; }
 .btn-save:hover { border-color: var(--muted); }
 .btn-save:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .btn-save:disabled { opacity: .55; cursor: default; }
-@media (prefers-color-scheme: dark) { .btn-save { border-color: #80868b; } .btn-save:hover { border-color: var(--muted); } }
+/* Button outline (Figma variables button/stroke, button/stroke-hover): visible on cards in light and dark. */
+:root { --button-stroke: #dadce0; }
+@media (prefers-color-scheme: dark) { :root { --button-stroke: #80868b; } }
+.btn-save { border-color: var(--button-stroke); }
+.btn-save:hover { border-color: var(--muted); }
 
 /* Home page screenshots under "How it works" */
 /* Desktop: side by side at the same height (flex-grow = each image's width/height ratio), using the
