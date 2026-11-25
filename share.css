@@ -498,6 +498,7 @@ select:disabled { opacity: .55; cursor: default; }
 .btn-save:hover { border-color: var(--muted); }
 .btn-save:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .btn-save:disabled { opacity: .55; cursor: default; }
+@media (prefers-color-scheme: dark) { .btn-save { border-color: #80868b; } .btn-save:hover { border-color: var(--muted); } }
 
 /* Home page screenshots under "How it works" */
 /* Desktop: side by side at the same height (flex-grow = each image's width/height ratio), using the
