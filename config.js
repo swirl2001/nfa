@@ -7,6 +7,6 @@ const NFA_CONFIG = {
   // Chrome Web Store build first, then unpacked dev builds (~/nfa-wishlist since Nov 22; the old Downloads path).
   // Cloudflare Turnstile (bot check for new accounts / sign-in codes). Public site key; the secret lives only in Supabase.
   // Empty = check off (the site and extension skip it).
-  turnstileSiteKey: "",
+  turnstileSiteKey: "0x4AAAAAAGTVw8p_Mq72lETW",
   extensionIds: ["kpbhoejlnjkkidpikidifjinhalmlfam", "fjfbofmpglahllnnbcbhcjnpbomablcp", "ndiaemjejodkomladnbdkhlopimhcnak"],
 };
