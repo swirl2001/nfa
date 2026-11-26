@@ -54,6 +54,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border-bottom: 1px solid transparent; transition: box-shadow .15s, border-color .15s;
 }
 .head.scrolled { border-bottom-color: var(--line); box-shadow: var(--head-shadow); }
+:root { --text-max: 680px; } /* widest a text card or block should get (Nov 25) */
 .top, .wrap-x, .wrap { width: 100%; max-width: 1100px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
 .top { padding-top: 14px; padding-bottom: 6px; }
 .brand { display: flex; align-items: center; gap: 8px; }
@@ -606,6 +607,7 @@ select:disabled { opacity: .55; cursor: default; }
 .preview[hidden] { display: none; }
 .preview-back { display: inline-block; font-size: 14px; margin-bottom: 10px; }
 .preview-card {
+  max-width: var(--text-max); /* Nov 25: text cards max 680px (Sean) */
   display: flex; align-items: center; gap: 16px 24px; justify-content: space-between; flex-wrap: wrap;
   padding: 14px 16px; background: var(--card); border-radius: 16px; box-shadow: 0 3px 12px rgba(0, 0, 0, .14);
 }
