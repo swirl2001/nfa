@@ -242,7 +242,7 @@ async function load() {
   // Preview starts with gifts hidden: only the owner's own marks from this browser show as gifted.
   if (preview) {
     items = items.filter((it) => !it.hidden); // hidden items never reach friends and family
-    items.forEach((it) => { it.claimed = !!mine()[it.id]; });
+    items.forEach(ownMarksOnly);
   }
   render(owner);
   if (preview) setupPreview();
@@ -414,16 +414,20 @@ function render(owner) {
   const friends = !isEdit && !owner;
   // Owner: items hidden from the share link get their own "Hidden" section, above "Received".
   const hiddenOnes = isEdit ? list.filter((it) => it.hidden === true) : [];
+  // More than one of an item (migration 014): friends and family see it split — what's still left
+  // stays in the list ("(4)"), what's gifted gets its own card in Gifted ("(2)").
+  const multi = (it) => friends && qtyOf(it) > 1;
   const bought = isEdit ? list.filter((it) => it.owned === true && !hiddenOnes.includes(it))
-    : friends ? list.filter((it) => it.claimed === true) : [];
-  list.filter((it) => !bought.includes(it) && !hiddenOnes.includes(it)).forEach((it) => grid.appendChild(card(tpl, it, owner)));
+    : friends ? list.filter((it) => (multi(it) ? giftedOf(it) > 0 : it.claimed === true)) : [];
+  const onTop = list.filter((it) => !hiddenOnes.includes(it) && (multi(it) ? giftedOf(it) < qtyOf(it) : !bought.includes(it)));
+  onTop.forEach((it) => grid.appendChild(card(tpl, it, owner, multi(it) ? "left" : null)));
   const hiddenGrid = $("#hiddenGrid");
   hiddenGrid.textContent = "";
   hiddenOnes.forEach((it) => hiddenGrid.appendChild(card(tpl, it, owner)));
   hiddenGrid.hidden = $("#hiddenRow").hidden = !hiddenOnes.length;
   const boughtGrid = $("#bought");
   boughtGrid.textContent = "";
-  bought.forEach((it) => boughtGrid.appendChild(card(tpl, it, owner)));
+  bought.forEach((it) => boughtGrid.appendChild(card(tpl, it, owner, multi(it) ? "gifted" : null)));
   $("#boughtHead").textContent = isEdit ? "Received" : "Gifted";
   boughtGrid.hidden = $("#boughtRow").hidden = !bought.length;
   $("#manageBtn").hidden = !(preview && showGifted);
@@ -431,7 +435,12 @@ function render(owner) {
 
 // ---------- cards ----------
 
-function card(tpl, it, owner) {
+// How many of an item the owner wants (1–99), and how many are gifted (friends and family / preview only).
+const qtyOf = (it) => Math.min(99, Math.max(1, Math.round(Number(it.quantity)) || 1));
+const giftedOf = (it) => (it.gifted != null ? Math.min(qtyOf(it), Math.max(0, Number(it.gifted) || 0)) : (it.claimed ? qtyOf(it) : 0));
+
+// part: null (one card per item), "left" (still to gift) or "gifted" — friends and family split items with a quantity.
+function card(tpl, it, owner, part = null) {
   const node = tpl.content.firstElementChild.cloneNode(true);
   node.dataset.id = it.id;
   const link = shopLink(it);
@@ -488,6 +497,7 @@ function card(tpl, it, owner) {
     if (amazon) { openMenu(btn, [hideEntry, deleteEntry], node); return; } // Amazon: nothing to open, copy or edit
     openMenu(btn, [
       isEdit && { icon: "edit", label: "Edit details", run: () => $(".t-name", node).click() },
+      isEdit && { icon: "qty", label: "How many…", run: () => openQtyEditor(node, it) },
       link && { icon: "open", label: "Open in new tab", run: () => visitStore(it, link, owner) },
       link && { icon: "copy", label: "Copy link", run: () => copyText(link, "Link copied.") },
       isEdit && inTop && !isFirst && { icon: "top", label: "Move to top", run: () => moveToTop(it) },
@@ -506,6 +516,10 @@ function card(tpl, it, owner) {
   $(".t-name", node).title = it.name || "";
   $(".t-desc", node).textContent = it.description || "";
   $(".t-price", node).textContent = nfaPriceText(it.price, it.currency, it.price_label);
+  // "(6)" after the price, only for 2 or more (Figma "Quantity"; never the word "wants").
+  // Split cards show what's left / what's gifted. Drawn by CSS (::after), so editing the price is unaffected.
+  const shown = part === "left" ? qtyOf(it) - giftedOf(it) : part === "gifted" ? giftedOf(it) : qtyOf(it);
+  if (qtyOf(it) > 1 && shown > 0) { $(".t-price", node).dataset.qty = shown; $(".t-price", node).classList.add("has-qty"); }
 
   if (isEdit) {
     const del = $(".del", node);
@@ -518,9 +532,72 @@ function card(tpl, it, owner) {
     showHidden(node, it);
     $(".hid", node).onclick = (e) => { e.stopPropagation(); e.preventDefault(); setHidden(it, node, false); };
   } else if (!owner) {
-    wireClaim(node, it);
+    wireClaim(node, it, part);
   }
   return node;
+}
+
+// ---------- "How many" (Nov 25, migration 014; Figma "Quantity") ----------
+// − n + stepper that fills its box. Typing a number works too; arrows step; it stays within 1…max.
+function stepper(value, max, label) {
+  let v = Math.min(max, Math.max(1, value));
+  const minus = el("button", { type: "button", class: "step-btn", "aria-label": "One fewer", text: "−" });
+  const plus = el("button", { type: "button", class: "step-btn", "aria-label": "One more", text: "+" });
+  const input = el("input", { type: "text", inputmode: "numeric", class: "step-val", role: "spinbutton", autocomplete: "off",
+    "aria-label": label, "aria-valuemin": "1", "aria-valuemax": String(max) });
+  const box = el("div", { class: "stepper" }, minus, input, plus);
+  const set = (n) => {
+    v = Math.min(max, Math.max(1, Math.round(Number(n)) || 1));
+    input.value = String(v);
+    input.setAttribute("aria-valuenow", String(v));
+    minus.disabled = v <= 1; plus.disabled = v >= max;
+  };
+  minus.onclick = () => set(v - 1);
+  plus.onclick = () => set(v + 1);
+  input.addEventListener("input", () => { const d = input.value.replace(/\D/g, "").slice(0, 2); if (d !== input.value) input.value = d; });
+  input.addEventListener("change", () => set(input.value));
+  input.addEventListener("blur", () => set(input.value));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp") { e.preventDefault(); set(v + 1); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); set(v - 1); }
+  });
+  set(v);
+  return { el: box, input, value: () => { set(input.value); return v; } };
+}
+
+// Owner: card ⋯ → How many… → stepper under the text, Cancel / Save. Return saves, Escape cancels.
+function openQtyEditor(node, it) {
+  const open = document.querySelector(".qty-edit");
+  if (open) open.remove();
+  const st = stepper(qtyOf(it), 99, `How many ${it.name || "of this item"}`);
+  const cancel = el("button", { type: "button", class: "text-link", text: "Cancel" });
+  const save = el("button", { type: "button", class: "btn-save", text: "Save" });
+  const box = el("div", { class: "qty-edit" }, st.el, el("div", { class: "form-actions" }, cancel, save));
+  $(".txt", node).after(box);
+  node.draggable = false;
+  const close = (focusBack = true) => { box.remove(); node.draggable = true; if (focusBack) refocus(it); };
+  cancel.onclick = () => close();
+  save.onclick = async () => {
+    const n = st.value(), old = qtyOf(it);
+    if (n === old) { close(); return; }
+    save.disabled = true;
+    try {
+      if (!(await ownerRpc("owner_update_item", { p_item_id: it.id, p_patch: { quantity: n } }))) throw new Error("not saved");
+      it.quantity = n;
+      render(true);
+      refocus(it);
+      announce(n > 1 ? `${it.name || "Item"}: ${n}` : `${it.name || "Item"}: just one`);
+    } catch (e) {
+      save.disabled = false;
+      toast("Couldn't save that change.");
+    }
+  };
+  box.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
+    else if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); save.click(); }
+  });
+  st.input.focus();
+  st.input.select();
 }
 
 // ---------- owner: "Mark as received" → "✓ Received" (their own flag, separate from friends' marks) ----------
@@ -879,7 +956,7 @@ function copyList() {
   const lines = [listTitle, ""];
   sortedItems().forEach((it, n) => {
     const price = nfaPriceText(it.price, it.currency, it.price_label);
-    lines.push(`${n + 1}. ${it.name}${price ? " — " + price : ""}`);
+    lines.push(`${n + 1}. ${it.name}${qtyOf(it) > 1 ? ` (${qtyOf(it)})` : ""}${price ? " — " + price : ""}`);
     if (it.description) lines.push(`   ${it.description}`);
     const link = shopLink(it);
     if (link) lines.push(`   ${link}`); else if (it.amazon_blocked) lines.push("   (Amazon link removed — find it at an independent shop)");
@@ -889,8 +966,8 @@ function copyList() {
 }
 function downloadList() {
   const cell = (v) => { let s = v == null ? "" : String(v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
-  const rows = [["Name", "Description", "Price", "Currency", "Store", "Link"]];
-  sortedItems().forEach((it) => rows.push([it.name, it.description || "", it.price_label || (it.price ?? ""), it.price_label ? "" : it.currency || "", it.amazon_blocked ? "" : it.store || "", shopLink(it)]));
+  const rows = [["Name", "Description", "Price", "Currency", "How many", "Store", "Link"]];
+  sortedItems().forEach((it) => rows.push([it.name, it.description || "", it.price_label || (it.price ?? ""), it.price_label ? "" : it.currency || "", qtyOf(it), it.amazon_blocked ? "" : it.store || "", shopLink(it)]));
   const csv = "﻿" + rows.map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const a = document.createElement("a");
@@ -926,20 +1003,31 @@ function browserId() {
 }
 const PENDING_MARK = "nfa-pending-mark"; // sessionStorage: {slug, itemId} to mark after signing in from the limit card
 const setMine = (id, token) => { const m = mine(); if (token) m[id] = token; else delete m[id]; store_.set(MINE_KEY, m); };
+// Items with a quantity can be marked more than once from one browser: then the entry is a list
+// [{t: token, n: how many}] instead of one token string (one-of items keep the old format).
+const myMarks = (id) => { const v = mine()[id]; return !v ? [] : typeof v === "string" ? [{ t: v, n: 1 }] : Array.isArray(v) ? v : []; };
+const myCount = (id) => myMarks(id).reduce((s, m) => s + (Number(m.n) || 1), 0);
+function addMark(id, t, n) { const m = mine(); m[id] = [...myMarks(id), { t, n }]; store_.set(MINE_KEY, m); }
+function dropMark(id, t) { const left = myMarks(id).filter((m) => m.t !== t); const m = mine(); if (left.length) m[id] = left; else delete m[id]; store_.set(MINE_KEY, m); }
+// Preview with Show gifted off: only this browser's own marks count.
+function ownMarksOnly(it) { it.gifted = Math.min(qtyOf(it), myCount(it.id)); it.claimed = it.gifted >= qtyOf(it); }
 const cards = new Map();               // itemId → { node, it }
 
-function wireClaim(node, it) {
-  cards.set(it.id, { node, it });
+function wireClaim(node, it, part = null) {
+  if (part !== "gifted" || !cards.has(it.id)) cards.set(it.id, { node, it });
   const token = mine()[it.id];
-  if (it.claimed === true) showClaimed(node, it, !!token);
+  if (part === "left") showUnclaimed(node, it);
+  else if (part === "gifted") showClaimed(node, it, !!token);
+  else if (it.claimed === true) showClaimed(node, it, !!token);
   else { if (token) setMine(it.id, null); showUnclaimed(node, it); }
+  if (part && !giftedOf(it) && token) setMine(it.id, null); // marks cleared by the owner
   $(".buy", node).onclick = () => markPurchased(it);
-  $(".unbuy", node).onclick = () => unmarkPurchased(it);
+  $(".unbuy", node).onclick = () => (part ? unmarkMine(it) : unmarkPurchased(it));
   $(".clear", node).onclick = () => clearGift(it);
   $(".clear", node).setAttribute("aria-label", `Undo: make ${it.name || "this item"} available to gift again`);
 }
 function showUnclaimed(node, it) {
-  it.claimed = false;
+  it.claimed = qtyOf(it) > 1 ? giftedOf(it) >= qtyOf(it) : false; // split items: true only when all are gifted
   node.classList.remove("claimed");
   $(".badge-out", node).hidden = it.in_stock !== false;
   $(".buy", node).hidden = false; $(".buy", node).disabled = false;
@@ -947,7 +1035,7 @@ function showUnclaimed(node, it) {
   $(".clear", node).hidden = true;
 }
 function showClaimed(node, it, isMine) {
-  it.claimed = true;
+  it.claimed = qtyOf(it) > 1 ? giftedOf(it) >= qtyOf(it) : true;
   node.classList.add("claimed");
   $(".badge-out", node).hidden = true; // stock doesn't matter once it's bought
   $(".buy", node).hidden = true;
@@ -998,7 +1086,7 @@ function maybeShowGrow() {
   // Wait for the "Marked as gifted" message to go, and never on top of another bottom card.
   let tries = 0;
   const show = () => {
-    const busy = !$("#toast").hidden || !$("#ask").hidden || !$("#limit").hidden;
+    const busy = !$("#toast").hidden || !$("#ask").hidden || !$("#limit").hidden || !$("#howMany").hidden;
     if (busy) { if (++tries < 40) setTimeout(show, 400); return; }
     $("#grow").hidden = false;
     announce("You're so generous! Want a wishlist like this for yourself?");
@@ -1006,7 +1094,85 @@ function maybeShowGrow() {
   setTimeout(show, 400);
 }
 
+// ---------- more than one of an item (migration 014; Figma "Quantity") ----------
+// Marking asks "How many did you gift?" only when 2 or more are left; the list then splits into
+// what's left and a Gifted card right away (re-rendered; Undo is on the message and on "✓ I gifted this").
+async function markSome(it, n = null) {
+  const c = cards.get(it.id); if (!c) return;
+  const left = qtyOf(it) - giftedOf(it);
+  if (left <= 0) return;
+  if (n == null && left >= 2) { showHowMany(it, left); return; }
+  n = Math.min(left, Math.max(1, n || 1));
+  if (!(await previewOk())) return;
+  const buy = $(".buy", c.node);
+  buy.disabled = true;
+  try {
+    const token = preview
+      ? await ownerRpc("owner_mark_gifted", { p_item_id: it.id, p_qty: n })
+      : await rpc("mark_purchased", { p_slug: slug, p_item_id: it.id, p_browser: browserId(), p_qty: n });
+    if (token === "limit") { buy.disabled = false; showLimit(it); return; }
+    if (!token) { it.gifted = qtyOf(it); render(false); toast("Someone already got these."); return; }
+    addMark(it.id, token, n);
+    it.gifted = giftedOf(it) + n;
+    render(false);
+    toast("Marked as gifted.", () => undoMark(it, token, n));
+    if (!preview) maybeShowGrow();
+  } catch (e) {
+    buy.disabled = false;
+    toast(/owners cannot claim/i.test(e.message) ? "This is your own list." : "Couldn't save that. Try again.");
+  }
+}
+// Undo one mark (the message's Undo).
+async function undoMark(it, token, n) {
+  if (!(await previewOk())) return;
+  try {
+    const ok = await rpc("unmark_purchased", { p_slug: slug, p_item_id: it.id, p_token: token });
+    dropMark(it.id, token);
+    if (ok) { it.gifted = Math.max(0, giftedOf(it) - n); toast("No longer marked as gifted."); }
+    else toast("Couldn't undo that one.");
+    render(false);
+  } catch (e) { toast("Couldn't undo. Try again."); }
+}
+// "✓ I gifted this" on a split Gifted card: undo every mark this browser made on the item.
+async function unmarkMine(it) {
+  const marks = myMarks(it.id);
+  if (!marks.length || !(await previewOk())) return;
+  let undone = 0, failed = false;
+  for (const m of marks) {
+    try {
+      if (await rpc("unmark_purchased", { p_slug: slug, p_item_id: it.id, p_token: m.t })) undone += Number(m.n) || 1;
+      dropMark(it.id, m.t);
+    } catch (e) { failed = true; }
+  }
+  it.gifted = Math.max(0, giftedOf(it) - undone);
+  render(false);
+  toast(failed ? "Couldn't undo. Try again." : undone ? "No longer marked as gifted." : "Couldn't undo that one.");
+}
+function showHowMany(it, left) {
+  const c = cards.get(it.id);
+  $("#ask").hidden = true; $("#limit").hidden = true;
+  const st = stepper(1, left, "How many you gifted");
+  $("#hmStep").textContent = "";
+  $("#hmStep").append(st.el);
+  $("#hmText").textContent = `${left} left to gift.`;
+  $("#howMany").hidden = false;
+  const close = (focusBack = true) => {
+    $("#howMany").hidden = true;
+    document.removeEventListener("keydown", onKey);
+    const b = c && $(".buy", c.node);
+    if (focusBack && b && b.isConnected && !b.hidden) b.focus({ preventScroll: false });
+  };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  $("#hmNo").onclick = () => close();
+  $("#hmYes").onclick = () => { const n = st.value(); close(false); markSome(it, n); };
+  st.input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#hmYes").click(); } });
+  st.input.focus({ preventScroll: true });
+  st.input.select();
+}
+
 async function markPurchased(it) {
+  if (qtyOf(it) > 1) return markSome(it);
   const c = cards.get(it.id); if (!c) return;
   if (!(await previewOk())) return;
   $(".buy", c.node).disabled = true;
@@ -1092,6 +1258,13 @@ async function clearGift(it) {
   try {
     if (!(await ownerRpc("owner_clear_gifted", { p_item_id: it.id }))) throw new Error("not saved");
     setMine(it.id, null);
+    if (qtyOf(it) > 1) { // split cards: all of them go back to the list
+      it.gifted = 0;
+      render(false);
+      toast("Available to gift again.");
+      const back = cards.get(it.id); if (back) $(".buy", back.node).focus();
+      return;
+    }
     showUnclaimed(c.node, it); // full colour, "Mark as gifted" again; stays in place until reload
     toast("Available to gift again.");
     $(".buy", c.node).focus();
@@ -1106,6 +1279,7 @@ function setManaging(on) {
   b.textContent = on ? "Done" : "Edit";
   b.setAttribute("aria-pressed", String(on));
   for (const { node, it } of cards.values()) if (it.claimed && node.isConnected) showClaimed(node, it, !!mine()[it.id]);
+  if (items.some((it) => qtyOf(it) > 1)) render(false); // split Gifted cards aren't in `cards`
 }
 $("#manageBtn").onclick = async () => {
   if (managing) { setManaging(false); return; }
@@ -1123,12 +1297,20 @@ async function setShowGifted(on) {
   sw.disabled = true;
   try {
     if (on) {
-      const ids = await ownerRpc("owner_gifted", {});
-      if (!Array.isArray(ids)) throw new Error("no data");
-      const gifted = new Set(ids);
-      items.forEach((it) => { it.claimed = gifted.has(it.id); });
+      // How many of each item are gifted (migration 014); older servers only list fully gifted ids.
+      let counts = null;
+      try { counts = await ownerRpc("owner_gifted_counts", {}); }
+      catch (e) { if (!/could not find the function|PGRST202/i.test(e.message)) throw e; }
+      if (counts && typeof counts === "object" && !Array.isArray(counts)) {
+        items.forEach((it) => { it.gifted = Math.min(qtyOf(it), Number(counts[it.id]) || 0); it.claimed = it.gifted >= qtyOf(it); });
+      } else {
+        const ids = await ownerRpc("owner_gifted", {});
+        if (!Array.isArray(ids)) throw new Error("no data");
+        const gifted = new Set(ids);
+        items.forEach((it) => { it.claimed = gifted.has(it.id); it.gifted = it.claimed ? qtyOf(it) : 0; });
+      }
     } else {
-      items.forEach((it) => { it.claimed = !!mine()[it.id]; });
+      items.forEach(ownMarksOnly);
     }
     showGifted = on;
     setManaging(false);
@@ -1247,7 +1429,7 @@ function resumePendingMark() {
 }
 
 function maybeAsk() {
-  if (isEdit || preview || document.body.classList.contains("owner-view") || !$("#ask").hidden || !$("#limit").hidden) return;
+  if (isEdit || preview || document.body.classList.contains("owner-view") || !$("#ask").hidden || !$("#limit").hidden || !$("#howMany").hidden) return;
   const v = store_.get(VISIT_KEY);
   if (!v || v.slug !== slug) return;
   const age = Date.now() - v.at;
@@ -1714,6 +1896,9 @@ function buildNewItemCard() {
     try { sym = new Intl.NumberFormat("en", { style: "currency", currency: c, currencyDisplay: "narrowSymbol" }).formatToParts(0).find((x) => x.type === "currency").value; } catch (e) {}
     cur.append(el("option", { value: c, text: sym === c ? c : `${sym} ${c}` }));
   });
+  const qty = stepper(1, 99, "How many?");
+  qty.input.id = "niQty";
+  qty.el.classList.add("new-qty");
   const err = el("p", { class: "new-error", id: "niError", role: "alert", hidden: true });
   const save = el("button", { type: "submit", class: "btn-save", text: "Add to list" });
   const cancel = el("button", { type: "button", class: "text-link", text: "Cancel" });
@@ -1727,6 +1912,7 @@ function buildNewItemCard() {
     field("niLink", "Link (optional)", link),
     field("niDesc", "Description (optional)", desc),
     el("div", { class: "new-field" }, el("label", { for: "niPrice", text: "Price (optional)" }), el("div", { class: "new-price" }, cur, price)),
+    el("div", { class: "new-field" }, el("label", { for: "niQty", text: "How many?" }), qty.el),
     err,
     el("div", { class: "form-actions" }, cancel, save));
   form.onsubmit = (e) => { e.preventDefault(); saveNewItem(save); };
@@ -1809,6 +1995,7 @@ async function saveNewItem(btn) {
       id: crypto.randomUUID(), name, description: description || null, url: url || null, store,
       image, price: pp.price, saved_price: pp.price, currency: pp.price == null ? null : pp.currency, price_label: pp.label,
       position: top - 1, saved_at: new Date().toISOString(), amazon_blocked: false, owned: false,
+      quantity: Math.min(99, Math.max(1, Math.round(Number($("#niQty").value)) || 1)),
     };
     const ok = await ownerRpc("owner_restore_item", { p_item: item });
     if (!ok) throw new Error("not saved");

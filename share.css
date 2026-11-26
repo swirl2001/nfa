@@ -720,3 +720,36 @@ a.btn-save { text-decoration: none; }
 .foot-grow-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--ink); text-wrap: balance; }
 .foot-grow-text { margin: 0; font-size: 14px; color: var(--muted); }
 .foot-grow[hidden], #footMade[hidden], #footGrowBtn[hidden] { display: none; }
+
+/* ---- More than one of an item (Nov 25, migration 014; Figma "Quantity") ----
+   "(6)" in muted text after the price, only for 2 or more (never the word "wants"). Drawn with ::after
+   so the editable price text stays just the price. Split cards for friends and family show what's left / gifted. */
+.t-price[data-qty]::after { content: " (" attr(data-qty) ")"; font-weight: 400; color: var(--muted); }
+.t-price.editing::after { content: none; }
+.friend .t-price.has-qty:empty { display: block; }
+/* − n + stepper: fills its box; 40px tall like text fields */
+.stepper {
+  display: flex; align-items: center; width: 100%; height: 40px; box-sizing: border-box;
+  background: var(--card); border: 1px solid var(--field-stroke); border-radius: 8px;
+}
+.stepper:focus-within { box-shadow: 0 0 0 2px var(--ink); border-color: transparent; }
+.step-btn {
+  flex: none; width: 40px; height: 100%; display: grid; place-items: center; padding: 0;
+  background: none; border: 0; border-radius: 8px; color: var(--ink); font-size: 18px; font-weight: 600; line-height: 1;
+}
+.step-btn:hover:not(:disabled) { background: var(--bg); }
+.step-btn:disabled { opacity: .38; cursor: default; }
+.stepper .step-val, .new-field .stepper .step-val {
+  flex: 1; min-width: 0; height: 100%; padding: 0; text-align: center; background: none; border: 0; box-shadow: none;
+  font: inherit; font-size: 15px; font-weight: 600; color: var(--ink);
+}
+.stepper .step-val:focus, .new-field .stepper .step-val:focus { outline: none; box-shadow: none; }
+.add-dialog .new-qty { background: var(--bg); max-width: 160px; } /* compact, like Figma Q3 */
+/* Owner: card ⋯ → How many… */
+.qty-edit { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.qty-edit .form-actions { margin: 0; }
+/* While the number is being changed, the card's own button (Mark as received) steps aside */
+.card:has(.qty-edit) .buy, .card:has(.qty-edit) .unbuy, .card:has(.qty-edit) .clear { display: none !important; }
+/* Friends and family: "How many did you gift?" bottom card */
+.how-many .ask-body { gap: 12px; }
+.hm-step .stepper { max-width: 160px; }
