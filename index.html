@@ -21,7 +21,7 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self'; style-src 'self'; img-src https: data: 'self'; connect-src https://tpwsbimymlyjcotkvrqd.supabase.co; base-uri 'none'; form-action 'none'" />
   <link rel="icon" href="raven.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="share.css?v=202611260005" />
+  <link rel="stylesheet" href="share.css?v=202611260033" />
 </head>
 <body>
   <header id="head" class="head">
@@ -66,7 +66,6 @@
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
         </button>
       </div>
-      <p id="explainer" class="explainer"></p>
       <!-- Owner page, list owner not signed in with Google yet (migration 011): sharing needs sign-in. -->
       <!-- Friends and family link, signed out, but this browser looks like the owner's (Nov 24):
            gift marks stay hidden; sign in to edit and share, or switch to the friends and family view. -->
@@ -186,6 +185,12 @@
         </div>
       </form>
     </section>
+    <!-- How the list works: under the owner's note, right above the items (Sean, Nov 26) -->
+    <!-- ✕ hides the tips in this browser for good (localStorage nfa-tips-hidden); never the edit-link warning -->
+    <div id="explainerRow" class="explainer-row" hidden>
+      <p id="explainer" class="explainer"></p>
+      <button id="explainerHide" class="note-remove" type="button" aria-label="Hide these tips" title="Hide these tips" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
     <section id="items" class="grid" aria-label="Wishlist items"></section>
     <!-- Friends only: items someone already got, moved here on page load -->
     <!-- Owner only: items hidden from the share link (card ⋯ → Hide), moved here on page load -->
@@ -391,11 +396,11 @@
     </article>
   </template>
 
-  <script src="config.js?v=202611260005"></script>
-  <script src="amazon.js?v=202611260005"></script>
-  <script src="price.js?v=202611260005"></script>
-  <script src="auth.js?v=202611260005"></script>
-  <script src="captcha.js?v=202611260005"></script>
-  <script src="share.js?v=202611260005"></script>
+  <script src="config.js?v=202611260033"></script>
+  <script src="amazon.js?v=202611260033"></script>
+  <script src="price.js?v=202611260033"></script>
+  <script src="auth.js?v=202611260033"></script>
+  <script src="captcha.js?v=202611260033"></script>
+  <script src="share.js?v=202611260033"></script>
 </body>
 </html>

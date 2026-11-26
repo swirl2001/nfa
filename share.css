@@ -70,7 +70,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .intro { padding-top: 8px; padding-bottom: 12px; }
 .title-row { display: flex; align-items: center; gap: 2px; }
 .title { flex: 1; min-width: 0; margin: 0; font-size: 26px; line-height: 1.15; overflow-wrap: anywhere; }
-.explainer { margin: 4px 0 0; color: var(--muted); font-size: 14.5px; max-width: 62ch; }
+.explainer { margin: 0; color: var(--muted); font-size: 14.5px; }
+/* Tips line above the items, under the note, with a ✕ to hide it for good in this browser (Nov 26) */
+.explainer-row {
+  display: flex; align-items: flex-start; gap: 6px; margin: 0 0 18px; /* full width, text capped, ✕ far right (option B) */
+  padding: 10px 8px 10px 14px; border-radius: 12px; background: rgba(32, 33, 36, .045); /* very light, see-through (Sean, Nov 26) */
+}
+@media (prefers-color-scheme: dark) { .explainer-row { background: rgba(232, 234, 237, .06); } }
+.explainer-row .explainer { flex: 0 1 var(--text-max); min-width: 0; }
+.explainer-row .note-remove { margin-left: auto; }
 
 /* Header icon buttons: no circle until hover */
 .icon {
@@ -753,3 +761,11 @@ a.btn-save { text-decoration: none; }
 /* Friends and family: "How many did you gift?" bottom card */
 .how-many .ask-body { gap: 12px; }
 .hm-step .stepper { max-width: 160px; }
+
+/* Note under the title, instructions above the items (Nov 26): whichever comes first sits close to the
+   title (the sticky header keeps its own 12px under the title for scrolling). */
+/* With a note, the header keeps only 4px under the title and the note sits 8px below it, so it reads as
+   part of the title (Sean, Nov 26). Nothing slides under the sticky header. */
+body:has(#noteRow:not([hidden])) .intro { padding-bottom: 4px; }
+#details:has(#noteRow:not([hidden])):not([hidden]) { margin-top: -8px; }
+#details[hidden] + #explainerRow { margin-top: -8px; }

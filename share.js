@@ -394,7 +394,20 @@ function renderHeader(owner) {
   $("#listMenuBtn").hidden = !isEdit;
   $("#shareGate").hidden = !(isEdit && !ownerSignedIn);
   $("#ownerGate").hidden = !(owner && !isEdit); // signed-out owner on the friends link
-  $("#explainer").hidden = !$("#ownerGate").hidden; // the card says it; don't repeat
+  // The tips line can be dismissed for good in this browser (Sean, Nov 26): friends and family's
+  // "Tap Mark as gifted…" and the signed-in owner's "This is your list…". Never the private edit link
+  // warning or the owner's "Don't spoil the surprise!". In the owner's preview the ✕ shows but doesn't stick.
+  const tipKind = preview || (!owner && !isEdit) ? "friends" : signedInOwner ? "owner" : null;
+  const tipsOff = store_.get(TIPS_KEY) || {};
+  $("#explainerHide").hidden = !tipKind;
+  $("#explainerRow").hidden = !$("#ownerGate").hidden // the card says it; don't repeat
+    || (tipKind && !preview && tipsOff[tipKind] === true);
+  $("#explainerHide").onclick = () => {
+    if (preview) { toast("This is a preview. Friends and family can hide these tips here."); return; }
+    const set = (on) => { const t = store_.get(TIPS_KEY) || {}; if (on) t[tipKind] = true; else delete t[tipKind]; store_.set(TIPS_KEY, t); $("#explainerRow").hidden = on; };
+    set(true);
+    toast("Tips hidden.", () => { set(false); $("#explainerHide").focus(); });
+  };
   setupGrow(!owner && !isEdit);
   $("#intro").hidden = false;
 }
@@ -1001,6 +1014,7 @@ function downloadList() {
 // token can undo it. Lost tokens (cleared browser data, other phone) just mean that mark can't be undone here.
 
 const MINE_KEY = "nfa-purchases";      // { [itemId]: token }
+const TIPS_KEY = "nfa-tips-hidden";    // { friends: true, owner: true } — tips line dismissed in this browser (Nov 26)
 const VISIT_KEY = "nfa-visit";         // { slug, itemId, at } — last store page a friend opened from here
 const store_ = {
   get(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } },
