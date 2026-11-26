@@ -694,3 +694,9 @@ a.btn-save { text-decoration: none; }
 /* Text fields + dropdowns outline (Nov 25, Figma variable field/stroke): visible on cards in light and dark. */
 :root { --field-stroke: #dadce0; }
 @media (prefers-color-scheme: dark) { :root { --field-stroke: #80868b; } }
+
+/* Bot check (Cloudflare Turnstile, Nov 25): invisible; this card shows only if Cloudflare wants a click. */
+.captcha-card { position: fixed; z-index: 80; left: -10000px; top: 0; width: 340px; padding: 16px; background: var(--card); border-radius: 20px; box-shadow: var(--shadow); }
+.captcha-card.show { left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.captcha-text { margin: 0 0 10px; font-size: 14px; font-weight: 600; text-align: center; }
+.captcha-frame { display: block; width: 100%; height: 70px; border: 0; color-scheme: normal; }

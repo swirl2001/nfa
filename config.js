@@ -5,5 +5,8 @@ const NFA_CONFIG = {
   supabaseKey: "sb_publishable_5HemwcVGfv4cQWptic96WQ_ulh7PcjO",
   // NFA extension IDs the page may ask "is this list yours?" (hides purchases from the owner).
   // Chrome Web Store build first, then unpacked dev builds (~/nfa-wishlist since Nov 22; the old Downloads path).
+  // Cloudflare Turnstile (bot check for new accounts / sign-in codes). Public site key; the secret lives only in Supabase.
+  // Empty = check off (the site and extension skip it).
+  turnstileSiteKey: "",
   extensionIds: ["kpbhoejlnjkkidpikidifjinhalmlfam", "fjfbofmpglahllnnbcbhcjnpbomablcp", "ndiaemjejodkomladnbdkhlopimhcnak"],
 };

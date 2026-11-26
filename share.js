@@ -1797,7 +1797,7 @@ async function askExtension(msg) {
 const emailVia = {
   site: {
     pending: () => NFAAuth.pendingEmail(),
-    send: (email) => NFAAuth.sendCode(email),
+    send: async (email) => NFAAuth.sendCode(email, await NFACaptcha.get()),
     verify: async (code) => { await NFAAuth.verifyCode(code); return "signed-in"; },
     cancel: () => NFAAuth.cancelEmail(),
   },
@@ -1806,7 +1806,10 @@ const emailVia = {
       try { const p = JSON.parse(sessionStorage.getItem(EXT_EMAIL) || "null"); return p && Date.now() - p.sentAt < 600000 ? p.email : ""; } catch (e) { return ""; }
     },
     async send(email) {
-      const r = await askExtension({ type: "nfa-email-send", slug, email });
+      // The extension can't run the bot check itself when its panel is closed, so the website passes one along.
+      let r = await askExtension({ type: "nfa-email-send", slug, email, captcha: await NFACaptcha.get() });
+      // A brand-new extension list first makes its account (that uses the token): one more try with a fresh one.
+      if (r && r.status === "error" && /person/.test(r.message || "")) r = await askExtension({ type: "nfa-email-send", slug, email, captcha: await NFACaptcha.get() });
       if (!r || r.status === "not-mine") throw new Error("Open the NFA Wishlist extension and sign in there.");
       if (r.status === "error") throw new Error(r.message || "Couldn't send the code. Try again.");
       email = email.trim().toLowerCase();

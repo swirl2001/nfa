@@ -26,7 +26,7 @@ const NFAAuth = (() => {
     if (token) headers.Authorization = `Bearer ${token}`;
     const res = await fetch(BASE + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
     const data = await res.json().catch(() => null);
-    if (!res.ok) { const e = new Error((data && (data.msg || data.message || data.error_description)) || `HTTP ${res.status}`); e.status = res.status; throw e; }
+    if (!res.ok) { const e = new Error((data && (data.msg || data.message || data.error_description)) || `HTTP ${res.status}`); e.status = res.status; e.code = (data && data.error_code) || ""; throw e; }
     return data;
   }
 
@@ -118,11 +118,15 @@ const NFAAuth = (() => {
     if (m) return new Error(`Wait ${m[1]} seconds, then send a new code.`);
     if (e && e.status === 429) return new Error("Too many codes for now. Wait a few minutes and try again.");
     if (!e || !e.status) return new Error("Couldn't reach NFA. Check your connection and try again.");
+    if (e.code === "captcha_failed" || /captcha/i.test(e.message || "")) return new Error("Couldn't confirm you're a person. Try again.");
     return new Error("Couldn't send the code. Check the email address and try again.");
   }
-  async function sendCode(raw) {
+  // captchaToken: one-time Cloudflare Turnstile token (NFACaptcha.get()); Supabase checks it once bot checks are on.
+  async function sendCode(raw, captchaToken) {
     const email = String(raw || "").trim().toLowerCase();
-    try { await call("/auth/v1/otp", { method: "POST", body: { email, create_user: true } }); }
+    const body = { email, create_user: true };
+    if (captchaToken) body.gotrue_meta_security = { captcha_token: captchaToken };
+    try { await call("/auth/v1/otp", { method: "POST", body }); }
     catch (e) { throw codeError(e); }
     ss.set(EMAIL, { email, sentAt: Date.now() });
     return email;
