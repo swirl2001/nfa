@@ -1641,12 +1641,6 @@ function wireNoteEdit() {
     else if (e.key === "Escape") { e.preventDefault(); finish(false); el.focus(); }
   });
   el.addEventListener("blur", () => finish(true));
-  $("#noteRemove").onclick = async () => {
-    const had = (details && details.note) || "";
-    if (!had) return;
-    try { await saveNote(""); renderDetails(); toast("Note removed.", () => restoreNote(had)); }
-    catch (e) { toast("Couldn't remove the note. Try again."); }
-  };
 }
 async function restoreNote(text) {
   try { await saveNote(text); renderDetails(); } catch (e) { toast("Couldn't restore the note."); }
@@ -1666,12 +1660,10 @@ function renderDetails() {
   const copyAll = [addr, dnotes && `Delivery notes: ${dnotes}`].filter(Boolean).join("\n");
   const locked = !addrShown && d.address_locked === true;
 
-  // Owner: the note is editable right here; empty shows the prompt (unless they hid it). Friends: just the note.
+  // Owner: the note is editable right here (no ✕: to remove it, clear the text; Sean, Nov 26); empty shows the prompt (unless they hid it). Friends: just the note.
   const ownerNote = isEdit && ownerData;
   if (!$("#noteText").isContentEditable) $("#noteText").textContent = ownerNote ? note : (noteShown ? note : "");
   $("#noteRow").hidden = editing || (ownerNote ? !note : !noteShown);
-  $("#noteRemove").hidden = !ownerNote || !note;
-  $("#noteRemove").setAttribute("aria-label", "Remove note"); $("#noteRemove").title = "Remove note";
   if (ownerNote) wireNoteEdit();
 
   const ship = $("#ship");
