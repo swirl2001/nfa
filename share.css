@@ -602,8 +602,7 @@ select:disabled { opacity: .55; cursor: default; }
 .note-row .note-text { flex: 1; min-width: 0; }
 .note-editable { cursor: text; border-radius: 8px; padding: 4px 8px; margin: -4px -8px; outline: none; min-height: 24px; }
 .note-editable:hover { background: var(--hover); }
-.note-editable:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
-.note-editable.editing { background: var(--card); box-shadow: 0 0 0 2px var(--ink); }
+.note-editable:focus-visible { box-shadow: inset 0 0 0 2px var(--ink); } /* inset: never clipped by the header */
 .note-remove { flex: none; width: 28px; height: 28px; margin-top: -2px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--muted); }
 .note-remove:hover { background: var(--hover); color: var(--ink); }
 .note-remove:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }

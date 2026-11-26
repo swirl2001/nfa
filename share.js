@@ -1588,62 +1588,30 @@ async function loadDetails() {
   }
 }
 
-// ---------- owner: note in place (Sean, Nov 22) ----------
-// An existing note is editable right under the intro: click to edit, Return saves, Shift+Return adds a
-// line, Escape cancels, ✕ removes it (with Undo). No note: nothing shows (the form opens on first visit).
+// ---------- owner: the note under the title (Nov 26) ----------
+// Clicking it opens the note + address form (Save / Cancel). No note: nothing shows (the form opens on first visit).
 const firstVisitKey = () => `nfa-details-opened:${slug}`;
-async function saveNote(text) {
-  const d = details || {};
-  const ok = await ownerRpc("owner_set_details", {
-    p_note: text, p_note_visibility: d.note_visibility || "public",
-    p_recipient_name: d.recipient_name || "", p_address: d.address || "",
-    p_delivery_notes: d.delivery_notes || "", p_address_visibility: d.address_visibility || "signed_in",
-  });
-  if (!ok) throw new Error("not saved");
-  details = { ...d, note: text || null, note_visibility: d.note_visibility || "public" };
-}
 let noteWired = false;
 function wireNoteEdit() {
+  // Click the note → the full note + address form opens (Save / Cancel), instead of editing in place
+  // (Sean, Nov 26: the in-place focus ring got cut off at the top).
   if (noteWired) return;
   noteWired = true;
   const el = $("#noteText");
   el.classList.add("note-editable");
   el.tabIndex = 0;
-  el.setAttribute("role", "textbox");
-  el.setAttribute("aria-label", "Note for friends and family");
+  el.setAttribute("role", "button");
+  el.setAttribute("aria-label", "Edit note and shipping address");
   el.title = "Click to edit";
-  let before = "";
-  const start = () => {
-    if (el.isContentEditable) return;
-    before = (details && details.note) || "";
-    el.contentEditable = "plaintext-only";
-    el.classList.add("editing");
-    el.focus();
-    const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
-    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  const open = () => {
+    openDetails();
+    const t = $("#noteInput");
+    t.setSelectionRange(t.value.length, t.value.length);
   };
-  const finish = async (keep) => {
-    if (!el.isContentEditable) return;
-    el.contentEditable = "false";
-    el.classList.remove("editing");
-    const text = el.innerText.replace(/\n{3,}/g, "\n\n").trim().slice(0, 500);
-    if (!keep || text === before) { el.textContent = before; return; }
-    el.textContent = text;
-    try { await saveNote(text); toast(text ? "Note saved." : "Note removed.", text ? null : () => restoreNote(before)); }
-    catch (e) { el.textContent = before; toast("Couldn't save the note. Try again."); }
-    renderDetails();
-  };
-  el.addEventListener("click", start);
+  el.addEventListener("click", open);
   el.addEventListener("keydown", (e) => {
-    if (!el.isContentEditable) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); start(); } return; }
-    if (e.isComposing) return;
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); el.blur(); }
-    else if (e.key === "Escape") { e.preventDefault(); finish(false); el.focus(); }
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
   });
-  el.addEventListener("blur", () => finish(true));
-}
-async function restoreNote(text) {
-  try { await saveNote(text); renderDetails(); } catch (e) { toast("Couldn't restore the note."); }
 }
 
 // What shows under the title. The owner sees what friends could see (not "Don't show it" ones).
