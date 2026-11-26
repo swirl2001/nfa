@@ -566,7 +566,9 @@ function stepper(value, max, label) {
 }
 
 // Owner: card ⋯ → How many… → stepper under the text, Cancel / Save. Return saves, Escape cancels.
-function openQtyEditor(node, it) {
+// withPrice: opened by clicking the price of an item with 2 or more (Sean, Nov 26) — no focus grab, and it
+// closes by itself when focus leaves both the price and the stepper without the number being changed.
+function openQtyEditor(node, it, withPrice = null) {
   const open = document.querySelector(".qty-edit");
   if (open) open.remove();
   const st = stepper(qtyOf(it), 99, `How many ${it.name || "of this item"}`);
@@ -578,6 +580,7 @@ function openQtyEditor(node, it) {
   const close = (focusBack = true) => { box.remove(); node.draggable = true; if (focusBack) refocus(it); };
   cancel.onclick = () => close();
   save.onclick = async () => {
+    if (withPrice && withPrice.isContentEditable) withPrice.blur(); // keep the price being typed (it saves on blur)
     const n = st.value(), old = qtyOf(it);
     if (n === old) { close(); return; }
     save.disabled = true;
@@ -596,6 +599,19 @@ function openQtyEditor(node, it) {
     if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
     else if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); save.click(); }
   });
+  if (withPrice) {
+    const untouched = () => st.value() === qtyOf(it);
+    const maybeClose = () => setTimeout(() => {
+      const a = document.activeElement;
+      if (box.isConnected && !box.contains(a) && a !== withPrice && untouched()) close(false);
+    }, 0);
+    box.addEventListener("focusout", maybeClose);
+    // − / + / Cancel / Save don't take focus from the price (Safari doesn't focus buttons on click).
+    box.addEventListener("mousedown", (e) => { if (e.target.closest("button")) e.preventDefault(); });
+    withPrice.addEventListener("blur", maybeClose, { once: true });
+    withPrice.addEventListener("keydown", (e) => { if (e.key === "Escape" && untouched()) close(false); }, { once: true });
+    return;
+  }
   st.input.focus();
   st.input.select();
 }
@@ -724,6 +740,8 @@ function makeEditable(el, it, cardNode) {
     if (el.isContentEditable) return;
     before = el.textContent;
     if (field === "price") el.textContent = nfaPriceText(it.price, it.currency, it.price_label);
+    // 2 or more of this item: the "How many" stepper shows under the price while it's edited.
+    if (field === "price" && qtyOf(it) > 1 && !$(".qty-edit", cardNode)) openQtyEditor(cardNode, it, el);
     el.contentEditable = "plaintext-only";
     el.classList.add("editing");
     cardNode.draggable = false;
