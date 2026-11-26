@@ -715,4 +715,4 @@ a.btn-save { text-decoration: none; }
 .foot-grow-copy { display: flex; flex-direction: column; gap: 4px; }
 .foot-grow-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--ink); text-wrap: balance; }
 .foot-grow-text { margin: 0; font-size: 14px; color: var(--muted); }
-.foot-grow[hidden], #footMade[hidden] { display: none; }
+.foot-grow[hidden], #footMade[hidden], #footGrowBtn[hidden] { display: none; }

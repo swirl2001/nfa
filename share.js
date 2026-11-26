@@ -258,24 +258,38 @@ function showLanding() {
   document.title = "NFA Wishlist · Shop small, shop local";
   $("#landing").hidden = false;
   showMyListLink();
+  setupHomeFoot();
+}
+// Home page footer (Nov 25): invite to install, worded for the home page; no button where Chrome can't install it.
+function setupHomeFoot() {
+  const chrome = chromeComputer();
+  $("#footMade").hidden = true;
+  $("#footGrow").hidden = false;
+  $("#footGrowTitle").textContent = "Ready to make your own wishlist?";
+  $("#footGrowText").textContent = chrome
+    ? "Save gifts from small shops with one right-click. Share one link. Free."
+    : "Free for Chrome on your computer. Save gifts from small shops and share one link.";
+  const b = $("#footGrowBtn");
+  b.hidden = !chrome;
+  b.href = "get"; b.textContent = "Add to Chrome — free";
 }
 
 // Home page, signed in: link to your own list.
 async function showMyListLink() {
   const box = $("#myList");
+  $("#openMine").hidden = true;
   if (!NFAAuth.user()) { box.hidden = true; return; }
   const mine = await rpc("my_list_link", {}).catch(() => null);
   box.textContent = "";
   if (mine && mine.slug) {
-    const a = document.createElement("a");
-    a.className = "text-link";
+    // Nov 25 (Sean): in the header next to your picture, not under the first paragraph.
+    const a = $("#openMine");
     a.href = `${location.pathname}?list=${encodeURIComponent(mine.slug)}`;
-    a.textContent = "Open your list";
-    box.append(a);
-  } else {
-    box.textContent = "No list yet. Save something with the NFA Wishlist extension, then sign in from its ⋯ menu.";
+    a.hidden = false;
+    box.hidden = true;
+    return;
   }
-  box.hidden = false;
+  box.hidden = true; // no list yet: nothing extra (Sean, Nov 25); Step 2 may add "Start your list" in the header
 }
 
 // ---------- account (optional Google sign-in) ----------
@@ -964,6 +978,8 @@ function setupGrow(friendView) {
   $("#makeOwn").href = $("#footGrowBtn").href = $("#growYes").href = g.href;
   $("#footGrowBtn").textContent = $("#growYes").textContent = g.label;
   $("#footGrowText").textContent = g.foot;
+  $("#footGrowTitle").textContent = "Want a wishlist like this for yourself?";
+  $("#footGrowBtn").hidden = false;
   $("#growText").textContent = g.card;
   // The owner's preview shows the same links, but they don't leave the page.
   for (const id of ["#makeOwn", "#footGrowBtn", "#growYes"]) {

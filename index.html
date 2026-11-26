@@ -21,7 +21,7 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self'; style-src 'self'; img-src https: data: 'self'; connect-src https://tpwsbimymlyjcotkvrqd.supabase.co; base-uri 'none'; form-action 'none'" />
   <link rel="icon" href="raven.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="share.css?v=202611251939" />
+  <link rel="stylesheet" href="share.css?v=202611252100" />
 </head>
 <body>
   <header id="head" class="head">
@@ -36,6 +36,8 @@
       <div class="head-end">
         <!-- Friends and family view: start your own wishlist (Nov 25, Figma "Friends → users") -->
         <a id="makeOwn" class="text-link make-own" target="_blank" rel="noopener" hidden><span class="mo-long">Make a wishlist</span><span class="mo-short" aria-hidden="true">Get yours</span></a>
+        <!-- Home page, signed in: your own list (Nov 25) -->
+        <a id="openMine" class="text-link" hidden>Open your list</a>
         <div id="account" class="account"></div>
       </div>
     </div>
@@ -311,7 +313,7 @@
   <footer class="foot">
     <div id="footGrow" class="foot-grow" hidden>
       <div class="foot-grow-copy">
-        <p class="foot-grow-title">Want a wishlist like this for yourself?</p>
+        <p id="footGrowTitle" class="foot-grow-title">Want a wishlist like this for yourself?</p>
         <p id="footGrowText" class="foot-grow-text"></p>
       </div>
       <a id="footGrowBtn" class="btn-save" target="_blank" rel="noopener"></a>
@@ -373,11 +375,11 @@
     </article>
   </template>
 
-  <script src="config.js?v=202611251939"></script>
-  <script src="amazon.js?v=202611251939"></script>
-  <script src="price.js?v=202611251939"></script>
-  <script src="auth.js?v=202611251939"></script>
-  <script src="captcha.js?v=202611251939"></script>
-  <script src="share.js?v=202611251939"></script>
+  <script src="config.js?v=202611252100"></script>
+  <script src="amazon.js?v=202611252100"></script>
+  <script src="price.js?v=202611252100"></script>
+  <script src="auth.js?v=202611252100"></script>
+  <script src="captcha.js?v=202611252100"></script>
+  <script src="share.js?v=202611252100"></script>
 </body>
 </html>
