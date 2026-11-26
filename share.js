@@ -381,6 +381,7 @@ function renderHeader(owner) {
   $("#shareGate").hidden = !(isEdit && !ownerSignedIn);
   $("#ownerGate").hidden = !(owner && !isEdit); // signed-out owner on the friends link
   $("#explainer").hidden = !$("#ownerGate").hidden; // the card says it; don't repeat
+  setupGrow(!owner && !isEdit);
   $("#intro").hidden = false;
 }
 
@@ -939,6 +940,56 @@ function showClaimed(node, it, isMine) {
   $(".unbuy", node).hidden = !isMine || managing; $(".unbuy", node).disabled = false;
   $(".clear", node).hidden = !managing; $(".clear", node).disabled = false; // owner's preview, Edit on
 }
+// ---------- friends and family → their own wishlist (Nov 25, Step 1; Figma "Friends → users") ----------
+// Header "Make a wishlist", a card after "Mark as gifted" (once per visit) and the footer.
+// Chrome-type browsers on a computer go to the Chrome Web Store (nfawishlist.com/get); phones and
+// Safari/Firefox go to the home page for now (Step 2 will let them start a list on the web).
+const GROW_SEEN = "nfa-grow-seen"; // sessionStorage: card shown this visit
+function chromeComputer() {
+  const ua = navigator.userAgent, uad = navigator.userAgentData;
+  const mobile = uad ? uad.mobile : /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+  return !mobile && /Chrome\//.test(ua); // Chrome, Edge, Brave, Arc… (iPhone Chrome says CriOS)
+}
+function growTarget() {
+  return chromeComputer()
+    ? { href: "get", label: "Add to Chrome — free", card: "Want a wishlist like this for yourself? Save gifts from small shops with one right-click. It's free.", foot: "Save gifts from small shops with one right-click. Share one link. Free." }
+    : { href: "./", label: "Make my own wishlist", card: "Want a wishlist like this for yourself? Save gifts from small shops and share one link. It's free.", foot: "Save gifts from small shops. Share one link. Free." };
+}
+function setupGrow(friendView) {
+  const g = growTarget();
+  $("#makeOwn").hidden = !friendView;
+  $("#footGrow").hidden = !friendView;
+  $("#footMade").hidden = friendView;
+  if (!friendView) { $("#grow").hidden = true; return; }
+  $("#makeOwn").href = $("#footGrowBtn").href = $("#growYes").href = g.href;
+  $("#footGrowBtn").textContent = $("#growYes").textContent = g.label;
+  $("#footGrowText").textContent = g.foot;
+  $("#growText").textContent = g.card;
+  // The owner's preview shows the same links, but they don't leave the page.
+  for (const id of ["#makeOwn", "#footGrowBtn", "#growYes"]) {
+    $(id).onclick = (e) => {
+      if (preview) { e.preventDefault(); toast("This is a preview. Friends and family go to the Chrome Web Store or the home page here."); return; }
+      if (id === "#growYes") hideGrow();
+    };
+  }
+}
+function hideGrow() { $("#grow").hidden = true; }
+$("#growNo").onclick = hideGrow;
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#grow").hidden) hideGrow(); });
+function maybeShowGrow() {
+  if (preview || isEdit) return;
+  try { if (sessionStorage.getItem(GROW_SEEN)) return; sessionStorage.setItem(GROW_SEEN, "1"); } catch (e) { return; }
+  // Wait for the "Marked as gifted" message to go, and never on top of another bottom card.
+  let tries = 0;
+  const show = () => {
+    const busy = !$("#toast").hidden || !$("#ask").hidden || !$("#limit").hidden;
+    if (busy) { if (++tries < 40) setTimeout(show, 400); return; }
+    $("#grow").hidden = false;
+    announce("You're so generous! Want a wishlist like this for yourself?");
+  };
+  setTimeout(show, 400);
+}
+
 async function markPurchased(it) {
   const c = cards.get(it.id); if (!c) return;
   if (!(await previewOk())) return;
@@ -966,6 +1017,7 @@ async function markPurchased(it) {
       setMine(it.id, token);
       showClaimed(c.node, it, true);
       toast("Marked as gifted.", () => unmarkPurchased(it));
+      maybeShowGrow();
     } else {
       showClaimed(c.node, it, false);
       toast("Someone already got this one.");

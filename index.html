@@ -21,7 +21,7 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self'; style-src 'self'; img-src https: data: 'self'; connect-src https://tpwsbimymlyjcotkvrqd.supabase.co; base-uri 'none'; form-action 'none'" />
   <link rel="icon" href="raven.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="share.css?v=202611251732" />
+  <link rel="stylesheet" href="share.css?v=202611251939" />
 </head>
 <body>
   <header id="head" class="head">
@@ -33,7 +33,11 @@
         <span class="tagline">shop small, shop local</span>
       </div>
       <!-- Optional Google sign-in (auth.js); filled in by renderAccount() -->
-      <div id="account" class="account"></div>
+      <div class="head-end">
+        <!-- Friends and family view: start your own wishlist (Nov 25, Figma "Friends → users") -->
+        <a id="makeOwn" class="text-link make-own" target="_blank" rel="noopener" hidden><span class="mo-long">Make a wishlist</span><span class="mo-short" aria-hidden="true">Get yours</span></a>
+        <div id="account" class="account"></div>
+      </div>
     </div>
     <section id="intro" class="intro wrap-x" hidden>
       <!-- Owner's Preview & manage (?preview=1): the list exactly as friends and family see it -->
@@ -224,6 +228,20 @@
     </div>
   </section>
 
+  <!-- After "Mark as gifted": invite friends and family to make their own wishlist (once per visit) -->
+  <section id="grow" class="ask grow" role="dialog" aria-labelledby="growTitle" aria-describedby="growText" hidden>
+    <div class="ask-body">
+      <div class="limit-copy">
+        <p id="growTitle" class="grow-title">You're so generous!</p>
+        <p id="growText" class="limit-text"></p>
+      </div>
+      <div class="form-actions">
+        <button id="growNo" class="text-link" type="button">Not now</button>
+        <a id="growYes" class="btn-save" target="_blank" rel="noopener"></a>
+      </div>
+    </div>
+  </section>
+
   <!-- Gift-mark limit (migration 010): a 4th "Mark as gifted" from this browser without signing in -->
   <section id="limit" class="ask limit" role="dialog" aria-labelledby="limitTitle" aria-describedby="limitText" hidden>
     <img id="limitImg" class="ask-img" alt="" referrerpolicy="no-referrer" />
@@ -291,7 +309,14 @@
   </main>
 
   <footer class="foot">
-    <p>Made with <b>NFA Wishlist</b>, a free extension for saving gifts from independent shops.</p>
+    <div id="footGrow" class="foot-grow" hidden>
+      <div class="foot-grow-copy">
+        <p class="foot-grow-title">Want a wishlist like this for yourself?</p>
+        <p id="footGrowText" class="foot-grow-text"></p>
+      </div>
+      <a id="footGrowBtn" class="btn-save" target="_blank" rel="noopener"></a>
+    </div>
+    <p id="footMade">Made with <b>NFA Wishlist</b>, a free extension for saving gifts from independent shops.</p>
     <nav class="foot-links" aria-label="About NFA Wishlist"><a href="./">Home</a><a href="privacy">Privacy</a><a href="terms">Terms</a></nav>
   </footer>
 
@@ -348,11 +373,11 @@
     </article>
   </template>
 
-  <script src="config.js?v=202611251732"></script>
-  <script src="amazon.js?v=202611251732"></script>
-  <script src="price.js?v=202611251732"></script>
-  <script src="auth.js?v=202611251732"></script>
-  <script src="captcha.js?v=202611251732"></script>
-  <script src="share.js?v=202611251732"></script>
+  <script src="config.js?v=202611251939"></script>
+  <script src="amazon.js?v=202611251939"></script>
+  <script src="price.js?v=202611251939"></script>
+  <script src="auth.js?v=202611251939"></script>
+  <script src="captcha.js?v=202611251939"></script>
+  <script src="share.js?v=202611251939"></script>
 </body>
 </html>

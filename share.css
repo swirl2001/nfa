@@ -702,3 +702,17 @@ a.btn-save { text-decoration: none; }
 .captcha-card.show { left: 50%; top: 50%; transform: translate(-50%, -50%); }
 .captcha-text { margin: 0 0 10px; font-size: 14px; font-weight: 600; text-align: center; }
 .captcha-frame { display: block; width: 100%; height: 70px; border: 0; color-scheme: normal; }
+
+/* Friends and family → their own wishlist (Nov 25, Step 1) */
+.head-end { display: flex; align-items: center; gap: 20px; flex: none; }
+.make-own .mo-short { display: none; }
+@media (max-width: 480px) { .brand-mark { display: none; } .tagline { margin-left: 0; } .head-end { gap: 14px; } } /* phones: no raven in the header, tagline left-aligned under the logo (Sean, Nov 25) */
+@media (max-width: 374px) { .make-own .mo-long { display: none; } .make-own .mo-short { display: inline; } }
+@media (max-width: 359px) { .make-own { display: none; } } /* tiny phones: the card and footer still invite them */
+.grow-title { margin: 0; font-size: 18px; font-weight: 700; }
+.grow { padding: 20px; }
+.foot-grow { display: flex; flex-direction: column; align-items: center; gap: 16px; margin: 4px auto 8px; text-align: center; }
+.foot-grow-copy { display: flex; flex-direction: column; gap: 4px; }
+.foot-grow-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--ink); text-wrap: balance; }
+.foot-grow-text { margin: 0; font-size: 14px; color: var(--muted); }
+.foot-grow[hidden], #footMade[hidden] { display: none; }
