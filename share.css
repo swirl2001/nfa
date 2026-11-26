@@ -337,6 +337,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 /* Links (Nov 25, Figma "Links" + "Buttons"): standalone links and text buttons (Cancel, Not now) have no underline;
    it shows on hover and keyboard focus. Links inside a sentence (.inline, plain <a> in text) stay underlined. */
 .text-link:hover, .text-link:focus-visible, .text-link.inline { text-decoration: underline; }
+.text-link.inline { display: inline; min-height: 0; font-size: inherit; line-height: inherit; } /* inside a sentence: don't stretch the line (Nov 25) */
 .text-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
 .avatar-btn {
   width: 32px; height: 32px; border-radius: 50%; border: 0; padding: 0; cursor: pointer;
@@ -612,7 +613,7 @@ select:disabled { opacity: .55; cursor: default; }
 }
 .preview-copy { flex: 1 1 320px; min-width: 0; max-width: var(--text-max); } /* card stays full width; text max 680px, toggle on the far right (Sean, Nov 25) */
 .preview-text { margin: 0; font-size: 15px; line-height: 21px; color: var(--muted); }
-.preview-help { margin: 6px 0 0; font-size: 13.5px; line-height: 19px; color: var(--muted); }
+.preview-help { margin: 6px 0 0; font-size: 13.5px; line-height: 19px; color: var(--muted); max-width: 60ch; } /* smaller text: shorter lines (Nov 25) */
 .preview-help .text-link { color: var(--ink); }
 .switch { display: flex; align-items: center; gap: 10px; flex: none; }
 .switch label { font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; }

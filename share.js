@@ -1008,8 +1008,8 @@ function setupPreview() {
 function updatePreviewBar() {
   $("#showGifted").setAttribute("aria-checked", String(showGifted));
   $("#previewText").textContent = showGifted
-    ? "This is your wishlist as friends and family see it, including what's been gifted."
-    : "This is your wishlist as friends and family see it. Gifted items stay hidden until you turn on Show gifted.";
+    ? "This is how friends and family see your list, gifts included."
+    : "This is how friends and family see your list. Gifts stay hidden until you turn on Show gifted.";
 }
 async function clearGift(it) {
   const c = cards.get(it.id); if (!c) return;
